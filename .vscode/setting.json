@@ -1,0 +1,8 @@
+{
+  "ruby.useLanguageServer": true,
+  "ruby.lint": "rubocop",
+  "ruby.format": "rubocop",
+  "[ruby]" : {
+    "editor.formatOnSave": false
+  }
+}

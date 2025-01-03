@@ -1,0 +1,9 @@
+#@formatter:off
+[*.{rb,json, yml}]
+#@formatter:on
+
+indent_style = space
+indent_size = 2
+tab_width = 8
+end_of_line = crlf
+max_line_length = 150
