@@ -6,5 +6,7 @@ Rails.application.routes.draw do
 
     get "user", to: "users#show"
     put "user", to: "users#update"
+
+    post "articles", to: "articles#create"
   end
 end

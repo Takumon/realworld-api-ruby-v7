@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-describe '/aip/users' do
+describe '/aip/users', type: :request do
   describe 'ユーザー登録 POST /' do
     it 'ユーザーが登録される' do
       params = {
@@ -148,7 +148,7 @@ describe '/aip/users' do
   end
 end
 
-describe '/aip/user' do
+describe '/aip/user', type: :request do
   describe 'カレントユーザー取得 GET /' do
     it '未ログインの場合、401エラーになる' do
       get '/api/user'
