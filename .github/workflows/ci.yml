@@ -71,7 +71,14 @@ jobs:
           RAILS_ENV: test
           # REDIS_URL: redis://localhost:6379/0
         # run: bundle exec rails db:test:prepare test test:system
-        run: bundle exec rspec
+        run: bundle exec rspec --format RspecJunitFormatter --out tmp/test-reports/rspec.xml
+
+      - name: Upload and annotate test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            tmp/test-reports/**/*.xml
 
       - name: Keep screenshots from failed system tests
         uses: actions/upload-artifact@v4
