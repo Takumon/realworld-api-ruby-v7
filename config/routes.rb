@@ -3,6 +3,7 @@ Rails.application.routes.draw do
   namespace :api do
     post "users/login", to: "users#login"
     post "users", to: "users#create"
-    get "users/:id", to: "users#show"
+
+    get "user", to: "users#show"
   end
 end

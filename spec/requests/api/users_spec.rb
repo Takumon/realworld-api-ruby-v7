@@ -147,3 +147,112 @@ describe '/aip/users' do
     end
   end
 end
+
+describe '/aip/user' do
+  describe 'カレントユーザー情報取得 GET /' do
+    include ActiveSupport::Testing::TimeHelpers
+
+    it '未ログインの場合、401エラーになる' do
+      get '/api/user'
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'ヘッダーが空の場合、401エラーになる' do
+      # 準備
+      user = FactoryBot.create(:user)
+      expect(user).to be_valid
+
+      params = { user: { email: user.email, password: user.password } }
+      post('/api/users/login', params:)
+
+      expect(response).to have_http_status(:success)
+      res =JSON.parse(response.body)['user']
+      expect(res['token']).not_to be nil
+
+      # 実処理
+      get '/api/user', headers: { "Authorization": "" }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'ヘッダーの形式が不正な場合、401エラーになる' do
+      # 準備
+      user = FactoryBot.create(:user)
+      expect(user).to be_valid
+
+      params = { user: { email: user.email, password: user.password } }
+      post('/api/users/login', params:)
+
+      expect(response).to have_http_status(:success)
+      res =JSON.parse(response.body)['user']
+      expect(res['token']).not_to be nil
+
+      # 実処理(valueの形式が不正)
+      get '/api/user', headers: { "Authorization": "#{res['token']}" }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'トークンの形式が不正な場合、401エラーになる' do
+      # 準備
+      user = FactoryBot.create(:user)
+      expect(user).to be_valid
+
+      params = { user: { email: user.email, password: user.password } }
+      post('/api/users/login', params:)
+
+      expect(response).to have_http_status(:success)
+      res =JSON.parse(response.body)['user']
+      expect(res['token']).not_to be nil
+
+      # 実処理(valueの形式が不正)
+      get '/api/user', headers: { "Authorization": "Token #{res['token'] }a" } # トークンに文字列をくっつけて不正な形式にする
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+
+    it 'トークンの有効期限切れの場合、401エラーになる' do
+      # 準備
+      user = FactoryBot.create(:user)
+      expect(user).to be_valid
+
+      params = { user: { email: user.email, password: user.password } }
+      post('/api/users/login', params:)
+
+      expect(response).to have_http_status(:success)
+      res =JSON.parse(response.body)['user']
+      expect(res['token']).not_to be nil
+
+      # 実処理（時間を有効期限まで進める）
+      travel 1.day do
+        get '/api/user', headers: { "Authorization": "Token #{res['token']}" }
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    it 'ヘッダーが正しく有効期限時刻ピッタリの場合、カレントユーザー情報が取得できる' do
+      # 準備
+      user = FactoryBot.create(:user)
+      expect(user).to be_valid
+
+      params = { user: { email: user.email, password: user.password } }
+      post('/api/users/login', params:)
+
+      expect(response).to have_http_status(:success)
+      res =JSON.parse(response.body)['user']
+      expect(res['token']).not_to be nil
+
+      # 実処理（時間を有効期限の直前まで進める）
+      travel 1.day - 1.second do
+        get '/api/user', headers: { "Authorization": "Token #{res['token']}" }
+        expect(response).to have_http_status(:success)
+
+        res =JSON.parse(response.body)['user']
+        expect(res['token']).to be nil # トークンは返却されない
+        expect(res['bio']).to be nil
+        expect(res['image']).to be nil
+
+        expect(res['username']).to eq(user.username)
+        expect(res['email']).to eq(user.email)
+      end
+    end
+  end
+end

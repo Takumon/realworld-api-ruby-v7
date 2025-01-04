@@ -1,6 +1,7 @@
 class Api::UsersController < ApplicationController
+  before_action :authenticate_request, only: [ :show ]
   def show
-    user = User.find(params[:id])
+    user = User.find(@current_user.id)
     render json: { user: user.as_json(only: [ :username, :email, :bio, :image ]) }
   end
 
@@ -46,15 +47,11 @@ class Api::UsersController < ApplicationController
     end
 
     def res_with_token(user)
-      token = JWT.encode(
-        {
-          user_id: user.id,
-          exp: (DateTime.now + 1.days).to_i
-        },
-        Rails.application.credentials.secret_key_base,
-        "HS256"
-      )
-
-      { user: { **user.as_json(only: [ :username, :email, :bio, :image ]), token: token } }
+      {
+        user: {
+          **user.as_json(only: [ :username, :email, :bio, :image ]),
+          token: generate_token(user)
+        }
+      }
     end
 end
