@@ -5,5 +5,6 @@ Rails.application.routes.draw do
     post "users", to: "users#create"
 
     get "user", to: "users#show"
+    put "user", to: "users#update"
   end
 end

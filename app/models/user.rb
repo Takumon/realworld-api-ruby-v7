@@ -12,5 +12,18 @@ class User < ApplicationRecord
 
   validates :password,
     presence: true,
-    length: { minimum: 8, maximum: 72 }
+    length: { minimum: 8, maximum: 72 },
+    on: :create
+
+  validates :bio,
+    length: { minimum: 1, maximum: 500 },
+    on: :update
+
+  validates :image,
+    length: { minimum: 1, maximum: 500 },
+    on: :update
+
+  validates :lock_version,
+    presence: true,
+    on: :update
 end
