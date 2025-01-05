@@ -1,8 +1,21 @@
 FactoryBot.define do
   factory :article do
-    slug { "sample-slug" }
-    title { "サンプルタイトル" }
-    description { "サンプル補足説明" }
-    body { "サンプル本文だよ" }
+    sequence(:slug) { |n| "sample-slug-#{n}" }
+    sequence(:title) { |n| "サンプルタイトル-#{n}" }
+    sequence(:description) { |n| "サンプル補足説明-#{n}" }
+    sequence(:body) { |n| "サンプル本文だよ-#{n}" }
+
+    transient do
+      prefix { nil }
+    end
+
+    after(:build) do |article, evaluator|
+      if evaluator.prefix.present?
+        article.slug = "#{evaluator.prefix}-#{article.slug}"
+        article.title = "#{evaluator.prefix}-#{article.title}"
+        article.description = "#{evaluator.prefix}-#{article.description}"
+        article.body = "#{evaluator.prefix}-#{article.body}"
+      end
+    end
   end
 end

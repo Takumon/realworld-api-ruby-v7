@@ -1,5 +1,18 @@
 class Api::ArticlesController < ApplicationController
-  before_action :authenticate_request, only: [ :show, :create, :update, :destroy ]
+  before_action :authenticate_request, only: [ :show, :create, :update, :destroy, :index ]
+
+  def index
+    query = ArticlesQuery.new(params_articles_query)
+    if query.invalid?
+      render json: query.errors, status: :bad_request
+      return
+    end
+
+    list = Article.all
+    list = list.joins(:user).where(user: { username: query.author }) if query.author.present?
+    list = list.offset(query.offset).limit(query.limit)
+    render json: res_articles(list)
+  end
 
   def show
     article = Article.find_by(slug: params[:slug], user_id: @current_user.id) # 自分の記事のみ検索
@@ -65,6 +78,10 @@ class Api::ArticlesController < ApplicationController
   end
 
   private
+    def params_articles_query
+      params.permit(:offset, :limit, :author)
+    end
+
     def params_article_create
       params.require(:article).permit(
         :slug,
@@ -84,7 +101,19 @@ class Api::ArticlesController < ApplicationController
 
     def res_article(article)
       {
-        article: article.as_json(only: [
+        article: article_to_json(article)
+      }
+    end
+
+    def res_articles(articles)
+      {
+        articles: articles.map { |article| article_to_json(article) },
+        articlesCount: articles.count
+      }
+    end
+
+    def article_to_json(article)
+      article.as_json(only: [
           :id,
           :slug,
           :title,
@@ -98,6 +127,5 @@ class Api::ArticlesController < ApplicationController
             # TODO :following を追加
           ])
         })
-      }
     end
 end

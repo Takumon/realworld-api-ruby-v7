@@ -142,7 +142,7 @@ describe '/api/articles', type: :request do
     describe 'slugの一意性' do
       it '別ユーザーで同じslugの記事があっても正常に登録できる' do
         other = FactoryBot.create(:user, email: "other@sample.com")
-        othersArticle = FactoryBot.create(:article, slug: "sample-slug", user: other)
+        othersArticle = FactoryBot.create(:article, slug: "other-slug", user: other)
 
         headers = { "Authorization": "Token #{token}" }
 
@@ -161,7 +161,7 @@ describe '/api/articles', type: :request do
 
       it '同じユーザーで同じslugの記事がある場合400エラーになる' do
         other = FactoryBot.create(:user, email: "other@sample.com")
-        othersArticle = FactoryBot.create(:article, slug: "sample-slug", user: other)
+        othersArticle = FactoryBot.create(:article, slug: "other-slug", user: other)
         myArticle = FactoryBot.create(:article, slug: othersArticle.slug, user: user)
 
         headers = { "Authorization": "Token #{token}" }
@@ -361,7 +361,7 @@ describe '/api/articles', type: :request do
       user
     }
 
-    let(:source_item) { FactoryBot.create(:article, slug: 'source-item-slug', user:) }
+    let(:source_item) { FactoryBot.create(:article, user:) }
 
     # 他のユーザー
     let(:other_user) {
@@ -474,6 +474,41 @@ describe '/api/articles', type: :request do
     it '他ユーザーの記事を更新しようとすると404エラーになる' do
       get("/api/articles/#{other_item.slug}", headers:)
       expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "記事一覧取得 GET /" do
+    # ログインユーザー
+    let(:user) {
+      user = FactoryBot.create(:user)
+      expect(user.valid?(context: :create)).to be_truthy
+      user
+    }
+
+    let(:source_items) { FactoryBot.create_list(:article, 100, prefix: 'mine', user:) }
+
+    # 他のユーザー
+    let(:other_user) {
+      other_user = FactoryBot.create(:user, email: 'other@sample.com')
+      expect(other_user.valid?(context: :create)).to be_truthy
+      other_user
+    }
+
+    let(:other_items) { FactoryBot.create_list(:article, 100, prefix: 'mine', user: other_user) }
+
+    # 認証用リクエストヘッダー
+    let(:headers) {
+      params = { user: { email: user.email, password: user.password } }
+      post('/api/users/login', params:)
+
+      expect(response).to have_http_status(:success)
+      res =JSON.parse(response.body)['user']
+      expect(res['token']).not_to be nil
+
+      { "Authorization": "Token #{res['token']}" }
+    }
+
+    it "正常なリクエストの場合、ステータスコード 200 が返ること" do
     end
   end
 end
