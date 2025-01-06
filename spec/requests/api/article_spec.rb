@@ -485,7 +485,7 @@ describe '/api/articles', type: :request do
       user
     }
 
-    let(:source_items) { FactoryBot.create_list(:article, 100, prefix: 'mine', user:) }
+    # let(:source_items) { FactoryBot.create_list(:article, 100, prefix: 'mine', user:) }
 
     # 他のユーザー
     let(:other_user) {
@@ -494,7 +494,7 @@ describe '/api/articles', type: :request do
       other_user
     }
 
-    let(:other_items) { FactoryBot.create_list(:article, 100, prefix: 'mine', user: other_user) }
+    # let(:other_items) { FactoryBot.create_list(:article, 100, prefix: 'other', user: other_user) }
 
     # 認証用リクエストヘッダー
     let(:headers) {
@@ -508,7 +508,94 @@ describe '/api/articles', type: :request do
       { "Authorization": "Token #{res['token']}" }
     }
 
-    it "正常なリクエストの場合、ステータスコード 200 が返ること" do
+    describe do name = "クエリストリング未指定の場合"
+      RSpec.shared_examples name do  |args|
+        count = args[:count]
+        expected_count = args[:expected_count]
+
+        it "#{name}、全#{count}件の場合、#{expected_count}件取得できる" do
+        FactoryBot.create_list(:article, count, user: user)
+
+          get("/api/articles", headers:)
+          expect(response).to have_http_status(:ok)
+
+          res = JSON.parse(response.body)["articles"]
+          expect(res.count).to eq(expected_count)
+        end
+      end
+
+      include_examples name, count: 19, expected_count: 19
+      include_examples name, count: 20, expected_count: 20
+      include_examples name, count: 21, expected_count: 20
     end
-  end
+
+
+    describe do name = "クエリストリングでlimitを指定する場合"
+      RSpec.shared_examples name do |args|
+        count = args[:count]
+        limit = args[:limit]
+        expected_count = args[:expected_count]
+
+        it "全#{count}件の場合、limitを#limit}に指定すると、#{expected_count}件取得できる" do
+          FactoryBot.create_list(:article, count, user: user)
+
+          get("/api/articles?limit=#{limit}", headers:)
+          expect(response).to have_http_status(:ok)
+
+          res = JSON.parse(response.body)["articles"]
+          expect(res.count).to eq(expected_count)
+        end
+      end
+
+      include_examples name, count: 21, limit: 21, expected_count: 21
+      include_examples name, count: 21, limit: 22, expected_count: 21
+    end
+
+
+    describe do name = "クエリストリングでoffsetを指定する場合"
+      RSpec.shared_examples name do |args|
+        count = args[:count]
+        offset = args[:offset]
+        expected_count = args[:expected_count]
+
+        it "全#{count}件の場合、limitを#limit}に指定すると、#{expected_count}件取得できる" do
+        FactoryBot.create_list(:article, count, user: user)
+
+        get("/api/articles?offset=#{offset}", headers:)
+          expect(response).to have_http_status(:ok)
+
+          res = JSON.parse(response.body)["articles"]
+          expect(res.count).to eq(expected_count)
+        end
+      end
+
+      include_examples name, count: 22, offset: 1, expected_count: 20
+      include_examples name, count: 22, offset: 2, expected_count: 20
+      include_examples name, count: 22, offset: 3, expected_count: 19
+    end
+
+    describe do name = "クエリストリングでlimitとoffsetを指定する場合"
+      RSpec.shared_examples name do |args|
+        count = args[:count]
+        limit = args[:limit]
+        offset = args[:offset]
+        expected_count = args[:expected_count]
+
+        it "全#{count}件の場合、limitを#limit}に指定すると、#{expected_count}件取得できる" do
+          FactoryBot.create_list(:article, count, user: user)
+
+          get("/api/articles?limit=#{limit}&offset=#{offset}", headers:)
+          expect(response).to have_http_status(:ok)
+
+          res = JSON.parse(response.body)["articles"]
+          expect(res.count).to eq(expected_count)
+        end
+      end
+
+      include_examples name, count: 10, limit: 9, offset: 0, expected_count: 9
+      include_examples name, count: 10, limit: 9, offset: 1, expected_count: 9
+      include_examples name, count: 10, limit: 9, offset: 2, expected_count: 8
+      include_examples name, count: 10, limit: 10, offset: 10, expected_count: 0
+    end
+end
 end

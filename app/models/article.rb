@@ -15,4 +15,6 @@ class Article < ApplicationRecord
   validates :title, length: { minimum: 1, maximum: 100 }
   validates :description, length: { minimum: 1, maximum: 500 }
   validates :body, length: { minimum: 1, maximum: 1000 }
+
+  scope :sorted_by_updated_at, -> { order(updated_at: :desc) }
 end
