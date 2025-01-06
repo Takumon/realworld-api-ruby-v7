@@ -485,16 +485,12 @@ describe '/api/articles', type: :request do
       user
     }
 
-    # let(:source_items) { FactoryBot.create_list(:article, 100, prefix: 'mine', user:) }
-
     # 他のユーザー
     let(:other_user) {
       other_user = FactoryBot.create(:user, email: 'other@sample.com')
       expect(other_user.valid?(context: :create)).to be_truthy
       other_user
     }
-
-    # let(:other_items) { FactoryBot.create_list(:article, 100, prefix: 'other', user: other_user) }
 
     # 認証用リクエストヘッダー
     let(:headers) {
@@ -514,7 +510,7 @@ describe '/api/articles', type: :request do
         expected_count = args[:expected_count]
 
         it "#{name}、全#{count}件の場合、#{expected_count}件取得できる" do
-        FactoryBot.create_list(:article, count, user: user)
+          FactoryBot.create_list(:article, count, user: user)
 
           get("/api/articles", headers:)
           expect(response).to have_http_status(:ok)
@@ -597,5 +593,21 @@ describe '/api/articles', type: :request do
       include_examples name, count: 10, limit: 9, offset: 2, expected_count: 8
       include_examples name, count: 10, limit: 10, offset: 10, expected_count: 0
     end
-end
+
+    it "記事一覧が更新日時の降順である" do
+      # バラバラに作成日時を設定
+      item_2 = FactoryBot.create(:article, user: user, prefix: '2', updated_at: Time.current + 2.day, created_at: Time.current)
+      item_1 = FactoryBot.create(:article, user: user, prefix: '1', updated_at: Time.current + 1.day, created_at: Time.current)
+      item_3 = FactoryBot.create(:article, user: user, prefix: '3', updated_at: Time.current + 3.day, created_at: Time.current)
+
+      get("/api/articles", headers:)
+      expect(response).to have_http_status(:ok)
+
+      res = JSON.parse(response.body)["articles"]
+      expect(res.count).to eq(3)
+      expect(res[0]['title']).to eq(item_3.title)
+      expect(res[1]['title']).to eq(item_2.title)
+      expect(res[2]['title']).to eq(item_1.title)
+    end
+  end
 end
