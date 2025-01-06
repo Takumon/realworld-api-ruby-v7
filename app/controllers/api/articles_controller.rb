@@ -9,7 +9,9 @@ class Api::ArticlesController < ApplicationController
     end
 
     list = Article.sorted_by_updated_at_desc
-    list = list.joins(:user).where(user: { username: query.author }) if query.author.present?
+    if query.author.present?
+      list = list.joins(:user).where(user: { username: query.author })
+    end
     list = list.offset(query.offset).limit(query.limit)
     render json: res_articles(list)
   end

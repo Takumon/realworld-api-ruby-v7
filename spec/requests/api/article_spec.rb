@@ -480,14 +480,14 @@ describe '/api/articles', type: :request do
   describe "記事一覧取得 GET /" do
     # ログインユーザー
     let(:user) {
-      user = FactoryBot.create(:user)
+      user = FactoryBot.create(:user, username: 'mine', email: 'mine@sample.com')
       expect(user.valid?(context: :create)).to be_truthy
       user
     }
 
     # 他のユーザー
     let(:other_user) {
-      other_user = FactoryBot.create(:user, email: 'other@sample.com')
+      other_user = FactoryBot.create(:user, username: 'other', email: 'other@sample.com')
       expect(other_user.valid?(context: :create)).to be_truthy
       other_user
     }
@@ -608,6 +608,46 @@ describe '/api/articles', type: :request do
       expect(res[0]['title']).to eq(item_3.title)
       expect(res[1]['title']).to eq(item_2.title)
       expect(res[2]['title']).to eq(item_1.title)
+    end
+
+    it "投稿者でフィルターできる" do
+      mine_1 = FactoryBot.create(:article, user: user, prefix: '1', updated_at: Time.current + 1.day, created_at: Time.current)
+      other_2 = FactoryBot.create(:article, user: other_user, prefix: '2', updated_at: Time.current + 2.day, created_at: Time.current)
+      mine_3 = FactoryBot.create(:article, user: user, prefix: '3', updated_at: Time.current + 3.day, created_at: Time.current)
+      other_4 = FactoryBot.create(:article, user: other_user, prefix: '4', updated_at: Time.current + 4.day, created_at: Time.current)
+      mine_5= FactoryBot.create(:article, user: user, prefix: '5', updated_at: Time.current + 5.day, created_at: Time.current)
+      other_6 = FactoryBot.create(:article, user: other_user, prefix: '6', updated_at: Time.current + 6.day, created_at: Time.current)
+
+
+      # フィルターなし
+      get("/api/articles", headers:)
+      expect(response).to have_http_status(:ok)
+      res = JSON.parse(response.body)["articles"]
+      expect(res.count).to eq(6)
+      expect(res[0]['title']).to eq(other_6.title)
+      expect(res[1]['title']).to eq(mine_5.title)
+      expect(res[2]['title']).to eq(other_4.title)
+      expect(res[3]['title']).to eq(mine_3.title)
+      expect(res[4]['title']).to eq(other_2.title)
+      expect(res[5]['title']).to eq(mine_1.title)
+
+      # フィルターあり(mine)
+      get("/api/articles?author=#{user.username}", headers:)
+      expect(response).to have_http_status(:ok)
+      res = JSON.parse(response.body)["articles"]
+      expect(res.count).to eq(3)
+      expect(res[0]['title']).to eq(mine_5.title)
+      expect(res[1]['title']).to eq(mine_3.title)
+      expect(res[2]['title']).to eq(mine_1.title)
+
+      # フィルターあり(other)
+      get("/api/articles?author=#{other_user.username}", headers:)
+      expect(response).to have_http_status(:ok)
+      res = JSON.parse(response.body)["articles"]
+      expect(res.count).to eq(3)
+      expect(res[0]['title']).to eq(other_6.title)
+      expect(res[1]['title']).to eq(other_4.title)
+      expect(res[2]['title']).to eq(other_2.title)
     end
   end
 end
