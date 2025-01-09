@@ -10,7 +10,17 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_01_04_114803) do
+ActiveRecord::Schema[7.2].define(version: 2025_01_06_221123) do
+  create_table "article_tags", force: :cascade do |t|
+    t.integer "article_id", null: false
+    t.integer "tag_id", null: false
+    t.integer "position", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["article_id"], name: "index_article_tags_on_article_id"
+    t.index ["tag_id"], name: "index_article_tags_on_tag_id"
+  end
+
   create_table "articles", force: :cascade do |t|
     t.string "slug", null: false
     t.string "title", null: false
@@ -21,6 +31,13 @@ ActiveRecord::Schema[7.2].define(version: 2025_01_04_114803) do
     t.datetime "updated_at", null: false
     t.index ["slug", "user_id"], name: "index_articles_on_slug_and_user", unique: true
     t.index ["user_id"], name: "index_articles_on_user_id"
+  end
+
+  create_table "tags", force: :cascade do |t|
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_tags_on_name", unique: true
   end
 
   create_table "users", force: :cascade do |t|
@@ -34,4 +51,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_01_04_114803) do
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
   end
+
+  add_foreign_key "article_tags", "articles", on_delete: :cascade
+  add_foreign_key "article_tags", "tags"
 end

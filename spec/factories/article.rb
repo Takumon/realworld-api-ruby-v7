@@ -21,4 +21,19 @@ FactoryBot.define do
       end
     end
   end
+
+  factory :tag do
+    transient do
+      started_at { 0 }
+    end
+
+    sequence(:name) { |n| "tagname-#{started_at + n}" }
+  end
+
+  factory :article_tag do
+    association :article
+    association :tag
+
+    sequence(:position) { |n| n }
+  end
 end

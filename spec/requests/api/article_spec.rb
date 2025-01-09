@@ -29,7 +29,8 @@ describe '/api/articles', type: :request do
           slug: "slug",
           title: "title",
           description: "description",
-          body: "body"
+          body: "body",
+          tagList: [ "tag1", "tag2", "tag3", "tag4", "tag5" ]
         }
       }
 
@@ -45,12 +46,115 @@ describe '/api/articles', type: :request do
       expect(actual['title']).to eq(input[:title])
       expect(actual['description']).to eq(input[:description])
       expect(actual['body']).to eq(input[:body])
+      expect(actual['tagList'].size).to eq(5)
+      expect(actual['tagList'][0]).to eq('tag1')
+      expect(actual['tagList'][1]).to eq('tag2')
+      expect(actual['tagList'][2]).to eq('tag3')
+      expect(actual['tagList'][3]).to eq('tag4')
+      expect(actual['tagList'][4]).to eq('tag5')
 
       expect(actual['author']['username']).to eq(user[:username])
       expect(actual['author']['boi']).to eq(user[:bio])
       expect(actual['author']['image']).to eq(user[:image])
       expect(actual['author']['email']).to be nil
     end
+
+    describe "タグの登録について" do
+      let(:headers) {
+        { "Authorization": "Token #{token}" }
+      }
+
+      it 'タグが0文字の場合、400エラーになる' do
+        # NG
+        params = {
+          article: {
+            slug: "slug",
+            title: "title",
+            description: "description",
+            body: "body",
+            tagList: [ "tag1", "tag2", "tag3", "tag4", "t" * 0 ]
+          }
+        }
+
+        post('/api/articles', params:, headers:)
+        expect(response).to have_http_status(:bad_request)
+
+        # OK
+        params = {
+          article: {
+            slug: "slug",
+            title: "title",
+            description: "description",
+            body: "body",
+            tagList: [ "tag1", "tag2", "tag3", "tag4", "t" * 1 ]
+          }
+        }
+
+        post('/api/articles', params:, headers:)
+        expect(response).to have_http_status(:created)
+      end
+
+      it 'タグが21文字の場合、400エラーになる' do
+        # N0
+        params = {
+          article: {
+            slug: "slug",
+            title: "title",
+            description: "description",
+            body: "body",
+            tagList: [ "tag1", "tag2", "tag3", "tag4", "t" * 21 ]
+          }
+        }
+
+        post('/api/articles', params:, headers:)
+        expect(response).to have_http_status(:bad_request)
+
+        # OK
+        params = {
+          article: {
+            slug: "slug",
+            title: "title",
+            description: "description",
+            body: "body",
+            tagList: [ "tag1", "tag2", "tag3", "tag4", "t" * 20 ]
+          }
+        }
+
+        post('/api/articles', params:, headers:)
+        expect(response).to have_http_status(:created)
+      end
+
+      it 'タグが6件以上の場合、400エラーになる' do
+        params = {
+          article: {
+            slug: "slug",
+            title: "title",
+            description: "description",
+            body: "body",
+            tagList: [ "tag1", "tag2", "tag3", "tag4", "tag5", "tag6" ]
+          }
+        }
+
+        post('/api/articles', params:, headers:)
+        expect(response).to have_http_status(:bad_request)
+      end
+
+      it "タグ名が重複している場合、400エラーになる" do
+        params = {
+          article: {
+            slug: "slug",
+            title: "title",
+            description: "description",
+            body: "body",
+            tagList: [ "tag1", "tag2", "tag3", "tag4", "tag1" ]
+          }
+        }
+
+        post('/api/articles', params:, headers:)
+        expect(response).to have_http_status(:bad_request)
+      end
+    end
+
 
     describe '不正なリクエストパラメーターを指定すると400エラーになる' do
       it '必須チェック' do
@@ -181,179 +285,286 @@ describe '/api/articles', type: :request do
     end
   end
 
-  describe "記事作成 UPDATE /" do
-    # ログインユーザー
-    let(:user) {
-      user = FactoryBot.create(:user)
-      expect(user.valid?(context: :create)).to be_truthy
-      user
-    }
+  describe "記事更新 UPDATE /:id" do
+    describe "タグの更新" do
+      # ログインユーザー
+      let(:user) {
+        user = FactoryBot.create(:user)
+        expect(user.valid?(context: :create)).to be_truthy
+        user
+      }
 
-    let(:source_item) { FactoryBot.create(:article, slug: 'source-item-slug', user:) }
+      let(:tags) { FactoryBot.create_list(:tag, 10) }
 
-    # 他のユーザー
-    let(:other_user) {
-      other_user = FactoryBot.create(:user, email: 'other@sample.com')
-      expect(other_user.valid?(context: :create)).to be_truthy
-      other_user
-    }
+      # 記事（タグなし）
+      let(:source_item) {
+        FactoryBot.create(
+          :article, slug: 'source-item-slug',
+          user: user,
+        )
+      }
 
-    let(:other_item) { FactoryBot.create(:article, slug: 'other-item-slug', user: other_user) }
+      # 認証用リクエストヘッダー
+      let(:headers) {
+        params = { user: { email: user.email, password: user.password } }
+        post('/api/users/login', params:)
 
-    # 認証用リクエストヘッダー
-    let(:headers) {
-      params = { user: { email: user.email, password: user.password } }
-      post('/api/users/login', params:)
+        expect(response).to have_http_status(:success)
+        res =JSON.parse(response.body)['user']
+        expect(res['token']).not_to be nil
 
-      expect(response).to have_http_status(:success)
-      res =JSON.parse(response.body)['user']
-      expect(res['token']).not_to be nil
-
-      { "Authorization": "Token #{res['token']}" }
-    }
-
-
-    it '正常なリクエストの場合、ステータスコード 200 が返ること' do
-      params = {
-        article: {
-          title: source_item.title + " updated title",
-          description: source_item.description + " updated description",
-          body: source_item.body + "updated body"
+        {
+          "Authorization": "Token #{res['token']}",
+          "CONTENT_TYPE": "application/json",
+          "ACCEPT": "application/json"
         }
       }
 
-      put("/api/articles/#{source_item.slug}", params:, headers:)
-      expect(response).to have_http_status(:ok)
-      actual = JSON.parse(response.body)['article']
-      input = params[:article]
-      expect(actual['title']).to eq(input[:title])
-      expect(actual['description']).to eq(input[:description])
-      expect(actual['body']).to eq(input[:body])
-    end
-
-    it "未認証の場合、401エラーになる" do
-      params = {
-        article: {
-          title: source_item.title + " updated title",
-          description: source_item.description + " updated description",
-          body: source_item.body + "updated body"
-        }
-      }
-
-      put("/api/articles/#{source_item.slug}", params:) # トークンは未指定
-      expect(response).to have_http_status(:unauthorized)
-    end
-
-    it '存在しない記事を更新しようとすると404エラーになる' do
-      params = {
-        article: {
-          title: source_item.title + " updated title",
-          description: source_item.description + " updated description",
-          body: source_item.body + "updated body"
-        }
-      }
-
-      put("/api/articles/non-existent-slug", params:, headers:)
-      expect(response).to have_http_status(:not_found)
-    end
-
-    it '他ユーザーの記事を更新しようとすると404エラーになる' do
-      params = {
-        article: {
-          title: other_item.title + " updated title",
-          description: other_item.description + " updated description",
-          body: other_item.body + "updated body"
-        }
-      }
-
-      put("/api/articles/#{other_item.slug}", params:, headers:)
-      expect(response).to have_http_status(:not_found)
-    end
-
-    it '楽観排他はなし（連続で更新できる）' do
-      params = {
-        article: {
-          title: source_item.title + " updated title",
-          description: source_item.description + " updated description",
-          body: source_item.body + "updated body"
-        }
-      }
-
-      put("/api/articles/#{source_item.slug}", params:, headers:)
-      expect(response).to have_http_status(:ok)
-
-      # 連続で更新
-      put("/api/articles/#{source_item.slug}", params:, headers:)
-      expect(response).to have_http_status(:ok)
-    end
-
-    describe '不正なリクエストパラメーターを指定すると400エラーになる' do
-      it '更新対象項目を何も指定しない場合、400エラーになる' do
+      it "タグの追加ができる" do
         params = {
           article: {
-            # 空
+            tagList: [ tags[0].name ]
           }
         }
 
         put("/api/articles/#{source_item.slug}", params:, headers:)
-        expect(response).to have_http_status(:bad_request)
+        expect(response).to have_http_status(:ok)
+
+        actual = JSON.parse(response.body)['article']
+        expect(actual['tagList'].size).to eq(1)
+        expect(actual['tagList'][0]).to eq(tags[0].name)
       end
 
-      it '最低桁数チェック' do
-        # NG
+      it "タグの削除ができる" do
+        # 追加
         params = {
           article: {
-            title: "a" * 0,
-            description: "a" * 0,
-            body: "a" * 0
+            tagList: [ tags[0].name ]
           }
-        }
+        }.to_json
 
         put("/api/articles/#{source_item.slug}", params:, headers:)
-        expect(response).to have_http_status(:bad_request)
+        expect(response).to have_http_status(:ok)
 
-        # OK
+        actual = JSON.parse(response.body)['article']
+        expect(actual['tagList'].size).to eq(1)
+        expect(actual['tagList'][0]).to eq(tags[0].name)
+
+        # 削除
         params = {
           article: {
-            title: "a" * 1,
-            description: "a" * 1,
-            body: "a" * 1
+            tagList: [] # 空配列
           }
-        }
+        }.to_json
 
         put("/api/articles/#{source_item.slug}", params:, headers:)
+        expect(response).to have_http_status(:ok)
+
+        actual = JSON.parse(response.body)['article']
+        expect(actual['tagList'].size).to eq(0)
+      end
+    end
+
+    describe "タグ以外の更新" do
+      # ログインユーザー
+      let(:user) {
+        user = FactoryBot.create(:user)
+        expect(user.valid?(context: :create)).to be_truthy
+        user
+      }
+
+      let(:tags) { FactoryBot.create_list(:tag, 10) }
+
+      let(:source_item) {
+        article = FactoryBot.create(
+          :article, slug: 'source-item-slug',
+          user: user,
+        )
+
+        # 紐づきのpositionはタグの並び順と一致するように登録
+        tags[0..5].each_with_index do |tag, i|
+          FactoryBot.create(:article_tag, article: article, tag: tag, position: i)
+        end
+
+        article.reload # 追加されたタグの紐づきを反映
+      }
+
+      # 他のユーザー
+      let(:other_user) {
+        other_user = FactoryBot.create(:user, email: 'other@sample.com')
+        expect(other_user.valid?(context: :create)).to be_truthy
+        other_user
+      }
+
+      let(:other_item) {
+        article = FactoryBot.create(
+          :article, slug: 'other-item-slug',
+          user: other_user,
+        )
+
+        # 紐づきのpositionはタグの並び順と一致するように登録
+        tags[6..9].each_with_index do |tag, i|
+          FactoryBot.create(:article_tag, article: article, tag: tag, position: i)
+        end
+
+        article.reload # 追加されたタグの紐づきを反映
+      }
+
+      # 認証用リクエストヘッダー
+      let(:headers) {
+        params = { user: { email: user.email, password: user.password } }
+        post('/api/users/login', params:)
+
         expect(response).to have_http_status(:success)
+        res =JSON.parse(response.body)['user']
+        expect(res['token']).not_to be nil
+
+        { "Authorization": "Token #{res['token']}" }
+      }
+
+
+      it '正常なリクエストの場合、ステータスコード 200 が返ること' do
+        params = {
+          article: {
+            title: source_item.title + " updated title",
+            description: source_item.description + " updated description",
+            body: source_item.body + "updated body"
+          }
+        }
+
+        put("/api/articles/#{source_item.slug}", params:, headers:)
+        expect(response).to have_http_status(:ok)
+        actual = JSON.parse(response.body)['article']
+        input = params[:article]
+        expect(actual['title']).to eq(input[:title])
+        expect(actual['description']).to eq(input[:description])
+        expect(actual['body']).to eq(input[:body])
       end
 
-      it '最大桁数チェック' do
-        # NG
+      it "未認証の場合、401エラーになる" do
         params = {
           article: {
-            title: "a" * 101,
-            description: "a" * 501,
-            body: "a" * 1001
+            title: source_item.title + " updated title",
+            description: source_item.description + " updated description",
+            body: source_item.body + "updated body"
+          }
+        }
+
+        put("/api/articles/#{source_item.slug}", params:) # トークンは未指定
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it '存在しない記事を更新しようとすると404エラーになる' do
+        params = {
+          article: {
+            title: source_item.title + " updated title",
+            description: source_item.description + " updated description",
+            body: source_item.body + "updated body"
+          }
+        }
+
+        put("/api/articles/non-existent-slug", params:, headers:)
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it '他ユーザーの記事を更新しようとすると404エラーになる' do
+        params = {
+          article: {
+            title: other_item.title + " updated title",
+            description: other_item.description + " updated description",
+            body: other_item.body + "updated body"
+          }
+        }
+
+        put("/api/articles/#{other_item.slug}", params:, headers:)
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it '楽観排他はなし（連続で更新できる）' do
+        params = {
+          article: {
+            title: source_item.title + " updated title",
+            description: source_item.description + " updated description",
+            body: source_item.body + "updated body"
           }
         }
 
         put("/api/articles/#{source_item.slug}", params:, headers:)
-        expect(response).to have_http_status(:bad_request)
+        expect(response).to have_http_status(:ok)
 
-        # OK
-        params = {
-          article: {
-            title: "a" * 100,
-            description: "a" * 500,
-            body: "a" * 1000
-          }
-        }
-
+        # 連続で更新
         put("/api/articles/#{source_item.slug}", params:, headers:)
-        expect(response).to have_http_status(:success)
+        expect(response).to have_http_status(:ok)
+      end
+
+      describe '不正なリクエストパラメーターを指定すると400エラーになる' do
+        it '更新対象項目を何も指定しない場合、400エラーになる' do
+          params = {
+            article: {
+              # 空
+            }
+          }
+
+          put("/api/articles/#{source_item.slug}", params:, headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+
+        it '最低桁数チェック' do
+          # NG
+          params = {
+            article: {
+              title: "a" * 0,
+              description: "a" * 0,
+              body: "a" * 0
+            }
+          }
+
+          put("/api/articles/#{source_item.slug}", params:, headers:)
+          expect(response).to have_http_status(:bad_request)
+
+          # OK
+          params = {
+            article: {
+              title: "a" * 1,
+              description: "a" * 1,
+              body: "a" * 1
+            }
+          }
+
+          put("/api/articles/#{source_item.slug}", params:, headers:)
+          expect(response).to have_http_status(:success)
+        end
+
+        it '最大桁数チェック' do
+          # NG
+          params = {
+            article: {
+              title: "a" * 101,
+              description: "a" * 501,
+              body: "a" * 1001
+            }
+          }
+
+          put("/api/articles/#{source_item.slug}", params:, headers:)
+          expect(response).to have_http_status(:bad_request)
+
+          # OK
+          params = {
+            article: {
+              title: "a" * 100,
+              description: "a" * 500,
+              body: "a" * 1000
+            }
+          }
+
+          put("/api/articles/#{source_item.slug}", params:, headers:)
+          expect(response).to have_http_status(:success)
+        end
       end
     end
   end
 
-  describe "記事削除 DELETE /" do
+  describe "記事削除 DELETE /:id" do
     # ログインユーザー
     let(:user) {
       user = FactoryBot.create(:user)
@@ -409,7 +620,7 @@ describe '/api/articles', type: :request do
     end
   end
 
-  describe "記事取得 GET /" do
+  describe "記事取得 GET /:id" do
     # ログインユーザー
     let(:user) {
       user = FactoryBot.create(:user)

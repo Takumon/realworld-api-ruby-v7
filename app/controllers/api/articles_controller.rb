@@ -37,6 +37,7 @@ class Api::ArticlesController < ApplicationController
     end
 
     if article.save
+      article.reload
       render json: res_article(article), status: :created
     else
       render json: "失敗", status: :unprocessable_entity
@@ -57,7 +58,8 @@ class Api::ArticlesController < ApplicationController
       return
     end
 
-    if article.save
+    if article.save_with_relations
+      debugger
       render json: res_article(article), status: :ok
     else
       render json: "失敗", status: :unprocessable
@@ -89,7 +91,8 @@ class Api::ArticlesController < ApplicationController
         :slug,
         :title,
         :description,
-        :body
+        :body,
+        tagList: []
       )
     end
 
@@ -97,7 +100,8 @@ class Api::ArticlesController < ApplicationController
       params.require(:article).permit(
         :title,
         :description,
-        :body
+        :body,
+        tagList: []
       )
     end
 
@@ -122,6 +126,7 @@ class Api::ArticlesController < ApplicationController
           :description,
           :body
         ]).merge({
+          tagList: article.tags.map(&:name),
           author: article.user.as_json(only: [
             :username,
             :bio,
