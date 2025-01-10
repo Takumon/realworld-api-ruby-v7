@@ -36,8 +36,7 @@ class Api::ArticlesController < ApplicationController
       return
     end
 
-    if article.save
-      article.reload
+    if article.save_with_relations
       render json: res_article(article), status: :created
     else
       render json: "失敗", status: :unprocessable_entity
@@ -59,7 +58,6 @@ class Api::ArticlesController < ApplicationController
     end
 
     if article.save_with_relations
-      debugger
       render json: res_article(article), status: :ok
     else
       render json: "失敗", status: :unprocessable

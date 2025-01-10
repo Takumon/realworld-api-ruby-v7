@@ -1,30 +1,42 @@
 require 'rails_helper'
 
 describe '/api/articles', type: :request do
+  # ログインユーザー
+  let(:user) {
+    user = FactoryBot.create(:user)
+    expect(user.valid?(context: :create)).to be_truthy
+    user
+  }
+
+  let(:none_auth_headers) {
+    {
+      "CONTENT_TYPE": "application/json",
+      "ACCEPT": "application/json"
+    }
+  }
+
+  # 認証トークン
+  let(:token) {
+    params = { user: { email: user.email, password: user.password } }.to_json
+    post('/api/users/login', params:, headers: none_auth_headers)
+
+    expect(response).to have_http_status(:success)
+    res =JSON.parse(response.body)['user']
+    expect(res['token']).not_to be nil
+
+    res['token']
+  }
+
+  let(:headers) {
+    {
+      "Authorization": "Token #{token}",
+      **none_auth_headers
+    }
+  }
+
   describe "記事作成 POST /" do
-    # ログインユーザー
-    let(:user) {
-      user = FactoryBot.create(:user)
-      expect(user.valid?(context: :create)).to be_truthy
-      user
-    }
-
-    # 認証トークン
-    let(:token) {
-      params = { user: { email: user.email, password: user.password } }
-      post('/api/users/login', params:)
-
-      expect(response).to have_http_status(:success)
-      res =JSON.parse(response.body)['user']
-      expect(res['token']).not_to be nil
-
-      res['token']
-    }
-
     it '正常なリクエストの場合、ステータスコード 200 が返ること' do
-      headers = { "Authorization": "Token #{token}" }
-
-      params = {
+      raw_params = {
         article: {
           slug: "slug",
           title: "title",
@@ -34,10 +46,12 @@ describe '/api/articles', type: :request do
         }
       }
 
+      params = raw_params.to_json
+
       expect { post('/api/articles', params:, headers:) }.to change(Article, :count).by(1)
       expect(response).to have_http_status(:success)
       actual = JSON.parse(response.body)['article']
-      input = params[:article]
+      input = raw_params[:article]
       expect(actual['id']).not_to be nil
       expect(actual['created_at']).to be nil
       expect(actual['updated_at']).to be nil
@@ -60,13 +74,9 @@ describe '/api/articles', type: :request do
     end
 
     describe "タグの登録について" do
-      let(:headers) {
-        { "Authorization": "Token #{token}" }
-      }
-
       it 'タグが0文字の場合、400エラーになる' do
         # NG
-        params = {
+        raw_params = {
           article: {
             slug: "slug",
             title: "title",
@@ -76,11 +86,13 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:bad_request)
 
         # OK
-        params = {
+        raw_params = {
           article: {
             slug: "slug",
             title: "title",
@@ -90,13 +102,15 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:created)
       end
 
       it 'タグが21文字の場合、400エラーになる' do
         # N0
-        params = {
+        raw_params = {
           article: {
             slug: "slug",
             title: "title",
@@ -106,11 +120,13 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:bad_request)
 
         # OK
-        params = {
+        raw_params = {
           article: {
             slug: "slug",
             title: "title",
@@ -120,12 +136,14 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:created)
       end
 
       it 'タグが6件以上の場合、400エラーになる' do
-        params = {
+        raw_params = {
           article: {
             slug: "slug",
             title: "title",
@@ -135,12 +153,14 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:bad_request)
       end
 
       it "タグ名が重複している場合、400エラーになる" do
-        params = {
+        raw_params = {
           article: {
             slug: "slug",
             title: "title",
@@ -149,6 +169,8 @@ describe '/api/articles', type: :request do
             tagList: [ "tag1", "tag2", "tag3", "tag4", "tag1" ]
           }
         }
+
+        params = raw_params.to_json
 
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:bad_request)
@@ -159,17 +181,23 @@ describe '/api/articles', type: :request do
     describe '不正なリクエストパラメーターを指定すると400エラーになる' do
       it '必須チェック' do
         # NG
-        headers = { "Authorization": "Token #{token}" }
+        headers = {
+          "Authorization": "Token #{token}",
+          "CONTENT_TYPE": "application/json",
+          "ACCEPT": "application/json"
+        }
 
-        params = {
+        raw_params = {
           article: {}
         }
+
+        params = raw_params.to_json
 
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:bad_request)
 
         # OK
-        params = {
+        raw_params = {
           article: {
             slug: "slug",
             title: "title",
@@ -178,15 +206,21 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:success)
       end
 
       it '最小桁数チェック' do
         # NG
-        headers = { "Authorization": "Token #{token}" }
+        headers = {
+          "Authorization": "Token #{token}",
+          "CONTENT_TYPE": "application/json",
+          "ACCEPT": "application/json"
+        }
 
-        params = {
+        raw_params = {
           article: {
             slug: "a" * 0,
             title: "a" * 0,
@@ -195,11 +229,13 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:bad_request)
 
         # OK
-        params = {
+        raw_params = {
           article: {
             slug: "a" * 1,
             title: "a" * 1,
@@ -208,15 +244,21 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:success)
       end
 
       it '最大桁数チェック' do
         # NG
-        headers = { "Authorization": "Token #{token}" }
+        headers = {
+          "Authorization": "Token #{token}",
+          "CONTENT_TYPE": "application/json",
+          "ACCEPT": "application/json"
+        }
 
-        params = {
+        raw_params = {
           article: {
             slug: "a" * 101,
             title: "a" * 101,
@@ -225,11 +267,13 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:bad_request)
 
         # OK
-        params = {
+        raw_params = {
           article: {
             slug: "a" * 100,
             title: "a" * 100,
@@ -237,6 +281,8 @@ describe '/api/articles', type: :request do
             body: "a" * 1000
           }
         }
+
+        params = raw_params.to_json
 
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:success)
@@ -248,9 +294,13 @@ describe '/api/articles', type: :request do
         other = FactoryBot.create(:user, email: "other@sample.com")
         othersArticle = FactoryBot.create(:article, slug: "other-slug", user: other)
 
-        headers = { "Authorization": "Token #{token}" }
+        headers = {
+          "Authorization": "Token #{token}",
+          "CONTENT_TYPE": "application/json",
+          "ACCEPT": "application/json"
+        }
 
-        params = {
+        raw_params = {
           article: {
             slug: othersArticle.slug, # 他ユーザーの記事と同じslug
             title: "sample-title",
@@ -258,6 +308,8 @@ describe '/api/articles', type: :request do
             body: "sample-body"
           }
         }
+
+        params = raw_params.to_json
 
         expect { post('/api/articles', params:, headers:) }.to change(Article, :count).by(1)
         expect(response).to have_http_status(:success)
@@ -268,9 +320,13 @@ describe '/api/articles', type: :request do
         othersArticle = FactoryBot.create(:article, slug: "other-slug", user: other)
         myArticle = FactoryBot.create(:article, slug: othersArticle.slug, user: user)
 
-        headers = { "Authorization": "Token #{token}" }
+        headers = {
+          "Authorization": "Token #{token}",
+          "CONTENT_TYPE": "application/json",
+          "ACCEPT": "application/json"
+        }
 
-        params = {
+        raw_params = {
           article: {
             slug: myArticle.slug, # 自分の記事と同じslug
             title: "sample-title",
@@ -278,6 +334,8 @@ describe '/api/articles', type: :request do
             body: "sample-body"
           }
         }
+
+        params = raw_params.to_json
 
         post('/api/articles', params:, headers:)
         expect(response).to have_http_status(:bad_request)
@@ -287,13 +345,6 @@ describe '/api/articles', type: :request do
 
   describe "記事更新 UPDATE /:id" do
     describe "タグの更新" do
-      # ログインユーザー
-      let(:user) {
-        user = FactoryBot.create(:user)
-        expect(user.valid?(context: :create)).to be_truthy
-        user
-      }
-
       let(:tags) { FactoryBot.create_list(:tag, 10) }
 
       # 記事（タグなし）
@@ -304,28 +355,14 @@ describe '/api/articles', type: :request do
         )
       }
 
-      # 認証用リクエストヘッダー
-      let(:headers) {
-        params = { user: { email: user.email, password: user.password } }
-        post('/api/users/login', params:)
-
-        expect(response).to have_http_status(:success)
-        res =JSON.parse(response.body)['user']
-        expect(res['token']).not_to be nil
-
-        {
-          "Authorization": "Token #{res['token']}",
-          "CONTENT_TYPE": "application/json",
-          "ACCEPT": "application/json"
-        }
-      }
-
       it "タグの追加ができる" do
-        params = {
+        raw_params = {
           article: {
             tagList: [ tags[0].name ]
           }
         }
+
+        params = raw_params.to_json
 
         put("/api/articles/#{source_item.slug}", params:, headers:)
         expect(response).to have_http_status(:ok)
@@ -337,11 +374,13 @@ describe '/api/articles', type: :request do
 
       it "タグの削除ができる" do
         # 追加
-        params = {
+        raw_params = {
           article: {
             tagList: [ tags[0].name ]
           }
-        }.to_json
+        }
+
+        params = raw_params.to_json
 
         put("/api/articles/#{source_item.slug}", params:, headers:)
         expect(response).to have_http_status(:ok)
@@ -351,11 +390,13 @@ describe '/api/articles', type: :request do
         expect(actual['tagList'][0]).to eq(tags[0].name)
 
         # 削除
-        params = {
+        raw_params = {
           article: {
             tagList: [] # 空配列
           }
-        }.to_json
+        }
+
+        params = raw_params.to_json
 
         put("/api/articles/#{source_item.slug}", params:, headers:)
         expect(response).to have_http_status(:ok)
@@ -366,13 +407,6 @@ describe '/api/articles', type: :request do
     end
 
     describe "タグ以外の更新" do
-      # ログインユーザー
-      let(:user) {
-        user = FactoryBot.create(:user)
-        expect(user.valid?(context: :create)).to be_truthy
-        user
-      }
-
       let(:tags) { FactoryBot.create_list(:tag, 10) }
 
       let(:source_item) {
@@ -410,21 +444,8 @@ describe '/api/articles', type: :request do
         article.reload # 追加されたタグの紐づきを反映
       }
 
-      # 認証用リクエストヘッダー
-      let(:headers) {
-        params = { user: { email: user.email, password: user.password } }
-        post('/api/users/login', params:)
-
-        expect(response).to have_http_status(:success)
-        res =JSON.parse(response.body)['user']
-        expect(res['token']).not_to be nil
-
-        { "Authorization": "Token #{res['token']}" }
-      }
-
-
       it '正常なリクエストの場合、ステータスコード 200 が返ること' do
-        params = {
+        raw_params = {
           article: {
             title: source_item.title + " updated title",
             description: source_item.description + " updated description",
@@ -432,30 +453,34 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         put("/api/articles/#{source_item.slug}", params:, headers:)
         expect(response).to have_http_status(:ok)
         actual = JSON.parse(response.body)['article']
-        input = params[:article]
+        input = raw_params[:article]
         expect(actual['title']).to eq(input[:title])
         expect(actual['description']).to eq(input[:description])
         expect(actual['body']).to eq(input[:body])
       end
 
       it "未認証の場合、401エラーになる" do
-        params = {
+        raw_params = {
           article: {
             title: source_item.title + " updated title",
             description: source_item.description + " updated description",
             body: source_item.body + "updated body"
           }
         }
+
+        params = raw_params.to_json
 
         put("/api/articles/#{source_item.slug}", params:) # トークンは未指定
         expect(response).to have_http_status(:unauthorized)
       end
 
       it '存在しない記事を更新しようとすると404エラーになる' do
-        params = {
+        raw_params = {
           article: {
             title: source_item.title + " updated title",
             description: source_item.description + " updated description",
@@ -463,12 +488,14 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         put("/api/articles/non-existent-slug", params:, headers:)
         expect(response).to have_http_status(:not_found)
       end
 
       it '他ユーザーの記事を更新しようとすると404エラーになる' do
-        params = {
+        raw_params = {
           article: {
             title: other_item.title + " updated title",
             description: other_item.description + " updated description",
@@ -476,18 +503,22 @@ describe '/api/articles', type: :request do
           }
         }
 
+        params = raw_params.to_json
+
         put("/api/articles/#{other_item.slug}", params:, headers:)
         expect(response).to have_http_status(:not_found)
       end
 
       it '楽観排他はなし（連続で更新できる）' do
-        params = {
+        raw_params = {
           article: {
             title: source_item.title + " updated title",
             description: source_item.description + " updated description",
             body: source_item.body + "updated body"
           }
         }
+
+        params = raw_params.to_json
 
         put("/api/articles/#{source_item.slug}", params:, headers:)
         expect(response).to have_http_status(:ok)
@@ -499,11 +530,13 @@ describe '/api/articles', type: :request do
 
       describe '不正なリクエストパラメーターを指定すると400エラーになる' do
         it '更新対象項目を何も指定しない場合、400エラーになる' do
-          params = {
+          raw_params = {
             article: {
               # 空
             }
           }
+
+        params = raw_params.to_json
 
           put("/api/articles/#{source_item.slug}", params:, headers:)
           expect(response).to have_http_status(:bad_request)
@@ -511,7 +544,7 @@ describe '/api/articles', type: :request do
 
         it '最低桁数チェック' do
           # NG
-          params = {
+          raw_params = {
             article: {
               title: "a" * 0,
               description: "a" * 0,
@@ -519,11 +552,13 @@ describe '/api/articles', type: :request do
             }
           }
 
+        params = raw_params.to_json
+
           put("/api/articles/#{source_item.slug}", params:, headers:)
           expect(response).to have_http_status(:bad_request)
 
           # OK
-          params = {
+          raw_params = {
             article: {
               title: "a" * 1,
               description: "a" * 1,
@@ -531,13 +566,15 @@ describe '/api/articles', type: :request do
             }
           }
 
+        params = raw_params.to_json
+
           put("/api/articles/#{source_item.slug}", params:, headers:)
           expect(response).to have_http_status(:success)
         end
 
         it '最大桁数チェック' do
           # NG
-          params = {
+          raw_params = {
             article: {
               title: "a" * 101,
               description: "a" * 501,
@@ -545,17 +582,21 @@ describe '/api/articles', type: :request do
             }
           }
 
+        params = raw_params.to_json
+
           put("/api/articles/#{source_item.slug}", params:, headers:)
           expect(response).to have_http_status(:bad_request)
 
           # OK
-          params = {
+          raw_params = {
             article: {
               title: "a" * 100,
               description: "a" * 500,
               body: "a" * 1000
             }
           }
+
+        params = raw_params.to_json
 
           put("/api/articles/#{source_item.slug}", params:, headers:)
           expect(response).to have_http_status(:success)
@@ -565,13 +606,6 @@ describe '/api/articles', type: :request do
   end
 
   describe "記事削除 DELETE /:id" do
-    # ログインユーザー
-    let(:user) {
-      user = FactoryBot.create(:user)
-      expect(user.valid?(context: :create)).to be_truthy
-      user
-    }
-
     let(:source_item) { FactoryBot.create(:article, user:) }
 
     # 他のユーザー
@@ -582,18 +616,6 @@ describe '/api/articles', type: :request do
     }
 
     let(:other_item) { FactoryBot.create(:article, slug: 'other-item-slug', user: other_user) }
-
-    # 認証用リクエストヘッダー
-    let(:headers) {
-      params = { user: { email: user.email, password: user.password } }
-      post('/api/users/login', params:)
-
-      expect(response).to have_http_status(:success)
-      res =JSON.parse(response.body)['user']
-      expect(res['token']).not_to be nil
-
-      { "Authorization": "Token #{res['token']}" }
-    }
 
     it '正常なリクエストの場合、ステータスコード 200 が返ること' do
       delete("/api/articles/#{source_item.slug}", headers:)
@@ -621,13 +643,6 @@ describe '/api/articles', type: :request do
   end
 
   describe "記事取得 GET /:id" do
-    # ログインユーザー
-    let(:user) {
-      user = FactoryBot.create(:user)
-      expect(user.valid?(context: :create)).to be_truthy
-      user
-    }
-
     let(:source_item) { FactoryBot.create(:article, slug: 'source-item-slug', user:) }
 
     # 他のユーザー
@@ -639,17 +654,6 @@ describe '/api/articles', type: :request do
 
     let(:other_item) { FactoryBot.create(:article, slug: 'other-item-slug', user: other_user) }
 
-    # 認証用リクエストヘッダー
-    let(:headers) {
-      params = { user: { email: user.email, password: user.password } }
-      post('/api/users/login', params:)
-
-      expect(response).to have_http_status(:success)
-      res =JSON.parse(response.body)['user']
-      expect(res['token']).not_to be nil
-
-      { "Authorization": "Token #{res['token']}" }
-    }
 
     it '正常なリクエストの場合、ステータスコード 200 が返ること' do
       get("/api/articles/#{source_item.slug}", headers:)
@@ -689,30 +693,11 @@ describe '/api/articles', type: :request do
   end
 
   describe "記事一覧取得 GET /" do
-    # ログインユーザー
-    let(:user) {
-      user = FactoryBot.create(:user, username: 'mine', email: 'mine@sample.com')
-      expect(user.valid?(context: :create)).to be_truthy
-      user
-    }
-
     # 他のユーザー
     let(:other_user) {
       other_user = FactoryBot.create(:user, username: 'other', email: 'other@sample.com')
       expect(other_user.valid?(context: :create)).to be_truthy
       other_user
-    }
-
-    # 認証用リクエストヘッダー
-    let(:headers) {
-      params = { user: { email: user.email, password: user.password } }
-      post('/api/users/login', params:)
-
-      expect(response).to have_http_status(:success)
-      res =JSON.parse(response.body)['user']
-      expect(res['token']).not_to be nil
-
-      { "Authorization": "Token #{res['token']}" }
     }
 
     describe do name = "クエリストリング未指定の場合"
