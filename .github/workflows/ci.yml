@@ -83,6 +83,16 @@ jobs:
           files: |
             tmp/test-reports/**/*.xml
 
+      - uses: 5monkeys/cobertura-action@master
+        with:
+          path: tmp/coverage/coverage.xml
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          minimum_coverage: 70
+          show_missing: true
+          show_class_names: true
+          link_missing_lines: true
+          report_name: code coverage results
+
       - name: Keep screenshots from failed system tests
         uses: actions/upload-artifact@v4
         if: failure()

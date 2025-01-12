@@ -95,3 +95,11 @@ RSpec.configure do |config|
   Kernel.srand config.seed
 =end
 end
+
+require 'simplecov'
+require 'simplecov-cobertura'
+SimpleCov.start do
+  add_filter '/spec/'
+  coverage_dir 'tmp/coverage'
+end
+SimpleCov.formatter = SimpleCov::Formatter::CoberturaFormatter

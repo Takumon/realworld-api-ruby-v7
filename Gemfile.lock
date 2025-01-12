@@ -90,6 +90,7 @@ GEM
       irb (~> 1.10)
       reline (>= 0.3.8)
     diff-lcs (1.5.1)
+    docile (1.4.1)
     drb (2.2.1)
     erubi (1.13.1)
     factory_bot (6.5.0)
@@ -189,6 +190,7 @@ GEM
     regexp_parser (2.10.0)
     reline (0.6.0)
       io-console (~> 0.5)
+    rexml (3.4.0)
     rspec-core (3.13.2)
       rspec-support (~> 3.13.0)
     rspec-expectations (3.13.3)
@@ -238,6 +240,15 @@ GEM
       rubocop-rails
     ruby-progressbar (1.13.0)
     securerandom (0.4.1)
+    simplecov (0.22.0)
+      docile (~> 1.1)
+      simplecov-html (~> 0.11)
+      simplecov_json_formatter (~> 0.1)
+    simplecov-cobertura (2.1.0)
+      rexml
+      simplecov (~> 0.19)
+    simplecov-html (0.13.1)
+    simplecov_json_formatter (0.1.4)
     sqlite3 (2.5.0-x64-mingw-ucrt)
     sqlite3 (2.5.0-x86_64-linux-gnu)
     stringio (3.1.2)
@@ -272,6 +283,8 @@ DEPENDENCIES
   rspec-rails (~> 7.0.0)
   rspec_junit_formatter (~> 0.6.0)
   rubocop-rails-omakase
+  simplecov
+  simplecov-cobertura (~> 2.1)
   sqlite3 (>= 1.4)
   tzinfo-data
 

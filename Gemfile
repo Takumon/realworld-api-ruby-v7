@@ -45,4 +45,7 @@ group :development, :test do
   gem "rspec-rails", "~> 7.0.0"
   gem "factory_bot_rails", "~> 6.4", ">= 6.4.4"
   gem "rspec_junit_formatter", "~> 0.6.0", require: false
+
+  gem "simplecov", require: false, group: :test
+  gem "simplecov-cobertura", "~> 2.1", require: false, group: :test
 end
