@@ -51,12 +51,13 @@ class Api::ArticlesController < ApplicationController
       return
     end
 
-    article.assign_attributes(params_article_update)
-    if article.invalid?
+    req = ArticleUpdateRequest.new(params_article_update)
+    if req.invalid?
       render json: article.errors, status: :bad_request
       return
     end
 
+    req.bind_to(article)
     if article.save_with_relations
       render json: res_article(article), status: :ok
     else

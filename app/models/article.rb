@@ -1,32 +1,18 @@
 class Article < ApplicationRecord
+  include ArticleValidations
+  add_uniqueness_validation
+
   belongs_to :user
   has_many :article_tags, -> { order(:position) }, dependent: :destroy
   has_many :tags, through: :article_tags
 
-  # 登録時のみのバリデーション
-  with_options on: :create do
-    validates :slug,
-      presence: true,
-      length: { minimum: 1, maximum: 100 },
-      uniqueness: { case_sensitive: false, scope: :user_id }
-    validates :title, presence: true
-    validates :description, presence: true
-    validates :body, presence: true
-  end
-
-  validates :title, length: { minimum: 1, maximum: 100 }
-  validates :description, length: { minimum: 1, maximum: 500 }
-  validates :body, length: { minimum: 1, maximum: 1000 }
+  scope :sorted_by_updated_at_desc, -> { order(updated_at: :desc) }
 
   attr_accessor :tagList
-  validate :validate_tag_list
-
-  scope :sorted_by_updated_at_desc, -> { order(updated_at: :desc) }
 
   def save_with_relations
     ActiveRecord::Base.transaction do
       self.save!
-
 
       req_tags = self.tagList
       req_has_data = req_tags.nil? == false && req_tags.any?
@@ -69,23 +55,4 @@ class Article < ApplicationRecord
       self.tags.reload # tags を更新
     end
   end
-
-  private
-    def validate_tag_list
-      list = self.tagList
-
-      return if list.blank?
-
-      if list.size > 5 # 0件でも可能
-        errors.add(:tagList, "タグの指定は5つ以下にしてください")
-      end
-
-      if list.select { |one| one.length < 1 || one.length > 20 }.any?
-        errors.add(:tagList, "タグは1文字以上20文字以下で指定してください")
-      end
-
-      if list.size != list.map(&:downcase).uniq.size
-        errors.add(:tagList, "タグ名が重複しています")
-      end
-    end
 end
