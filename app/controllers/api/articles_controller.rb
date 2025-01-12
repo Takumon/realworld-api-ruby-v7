@@ -12,6 +12,11 @@ class Api::ArticlesController < ApplicationController
     if query.author.present?
       list = list.joins(:user).where(user: { username: query.author })
     end
+
+    if query.tag.present?
+      list = list.joins(:tags).where(tags: { name: query.tag })
+    end
+
     list = list.offset(query.offset).limit(query.limit)
     render json: res_articles(list)
   end
@@ -82,7 +87,7 @@ class Api::ArticlesController < ApplicationController
 
   private
     def params_articles_query
-      params.permit(:offset, :limit, :author)
+      params.permit(:offset, :limit, :author, :tag)
     end
 
     def params_article_create

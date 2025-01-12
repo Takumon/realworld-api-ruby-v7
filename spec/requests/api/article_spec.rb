@@ -663,6 +663,8 @@ describe '/api/articles', type: :request do
     end
   end
 
+
+
   describe "記事削除 DELETE /:id" do
     let!(:source_item) { FactoryBot.create(:article, user:) }
 
@@ -713,6 +715,8 @@ describe '/api/articles', type: :request do
       end
     end
   end
+
+
 
   describe "記事取得 GET /:id" do
     let!(:source_item) { FactoryBot.create(:article, slug: 'source-item-slug', user:) }
@@ -781,7 +785,142 @@ describe '/api/articles', type: :request do
       other_user
     }
 
-    context do name = "クエリストリング未指定の場合"
+    describe '入力チェク系' do
+      let!(:articles) { FactoryBot.create_list(:article, 10, user: user) }
+      let!(:tags) { FactoryBot.create_list(:tag, 5) }
+
+      context 'offsetが数値以外' do
+        it '入力チェックエラーになる' do
+          offset = "hoge"
+          get("/api/articles?offset=#{offset}", headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      context 'offsetが最低値未満' do
+        it '入力チェックエラーになる' do
+          offset = -1
+          get("/api/articles?offset=#{offset}", headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      context 'offsetが最低値' do
+        it '一覧が取得できる' do
+          offset = 0
+          get("/api/articles?offset=#{offset}", headers:)
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      context 'offsetが最大値' do
+        it '一覧が取得できる' do
+          offset = 1000
+          get("/api/articles?offset=#{offset}", headers:)
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      context 'offsetが最大値より大きい' do
+        it '入力チェックエラーになる' do
+          offset = 1001
+          get("/api/articles?offset=#{offset}", headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      context 'limitが数値以外' do
+        it '入力チェックエラーになる' do
+          limit = "hoge"
+          get("/api/articles?limit=#{limit}", headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      context 'limitが最低値未満' do
+        it '入力チェックエラーになる' do
+          limit = -1
+          get("/api/articles?limit=#{limit}", headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      context 'limitが最低値' do
+        it '一覧が取得できる' do
+          limit = 0
+          get("/api/articles?limit=#{limit}", headers:)
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      context 'limitが最大値' do
+        it '一覧が取得できる' do
+          limit = 100
+          get("/api/articles?limit=#{limit}", headers:)
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      context 'limitが最大値より大きい' do
+        it '入力チェックエラーになる' do
+          limit = 101
+          get("/api/articles?limit=#{limit}", headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      context 'authorが存在しないユーザー' do
+        it 'invalid_user_name' do
+          author = "invalid_user_name"
+          get("/api/articles?author=#{author}", headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      context 'tagが最低桁数未満' do
+        it '入力チェックエラーになる' do
+          tag_name = 'a' * 0
+          get("/api/articles?tag=#{tag_name}", headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      context 'tagが最低桁数' do
+        it '一覧が取得できる' do
+          tag_name = 'a' * 1
+          FactoryBot.create(:tag, name: tag_name)
+          get("/api/articles?tag=#{tag_name}", headers:)
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      context 'tagが最大桁数' do
+        it '一覧が取得できる' do
+          tag_name = 'a' * 100
+          FactoryBot.create(:tag, name: tag_name)
+          get("/api/articles?tag=#{tag_name}", headers:)
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      context 'tagが最大桁数より大きい' do
+        it '入力チェックエラーになる' do
+          tag_name = 'a' * 101
+          get("/api/articles?tag=#{tag_name}", headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      context '存在しないtag' do
+        it '入力チェックエラーになる' do
+          tag_name = 'invalid_tag'
+          get("/api/articles?tag=#{tag_name}", headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+    end
+
+    context do name = "検索条件未指定の場合"
       RSpec.shared_examples name do  |args|
         count = args[:count]
         expected_count = args[:expected_count]
@@ -805,7 +944,7 @@ describe '/api/articles', type: :request do
     end
 
 
-    context do name = "クエリストリングでlimitを指定する場合"
+    context do name = "検索条件でlimitを指定する場合"
       RSpec.shared_examples name do |args|
         count = args[:count]
         limit = args[:limit]
@@ -829,7 +968,7 @@ describe '/api/articles', type: :request do
     end
 
 
-    context do name = "クエリストリングでoffsetを指定する場合"
+    context do name = "検索条件でoffsetを指定する場合"
       RSpec.shared_examples name do |args|
         count = args[:count]
         offset = args[:offset]
@@ -853,7 +992,7 @@ describe '/api/articles', type: :request do
       include_examples name, count: 22, offset: 3, expected_count: 19
     end
 
-    context do name = "クエリストリングでlimitとoffsetを指定する場合"
+    context do name = "検索条件でlimitとoffsetを指定する場合"
       RSpec.shared_examples name do |args|
         count = args[:count]
         limit = args[:limit]
@@ -934,6 +1073,52 @@ describe '/api/articles', type: :request do
       expect(res[0]['title']).to eq(other_6.title)
       expect(res[1]['title']).to eq(other_4.title)
       expect(res[2]['title']).to eq(other_2.title)
+    end
+
+    it "タグでフィルターできる" do
+      tags = FactoryBot.create_list(:tag, 5)
+
+      mine_1 = FactoryBot.create(:article, user: user, prefix: '1', updated_at: Time.current + 1.day, created_at: Time.current)
+      FactoryBot.create(:article_tag, article: mine_1, tag: tags[0], position: 0)
+      FactoryBot.create(:article_tag, article: mine_1, tag: tags[1], position: 1)
+
+      other_2 = FactoryBot.create(:article, user: other_user, prefix: '2', updated_at: Time.current + 2.day, created_at: Time.current)
+      FactoryBot.create(:article_tag, article: other_2, tag: tags[0], position: 0)
+      FactoryBot.create(:article_tag, article: other_2, tag: tags[1], position: 1)
+
+      mine_3 = FactoryBot.create(:article, user: user, prefix: '3', updated_at: Time.current + 3.day, created_at: Time.current)
+      FactoryBot.create(:article_tag, article: mine_3, tag: tags[1], position: 0)
+      FactoryBot.create(:article_tag, article: mine_3, tag: tags[2], position: 1)
+
+      other_4 = FactoryBot.create(:article, user: other_user, prefix: '4', updated_at: Time.current + 4.day, created_at: Time.current)
+      FactoryBot.create(:article_tag, article: other_4, tag: tags[1], position: 0)
+      FactoryBot.create(:article_tag, article: other_4, tag: tags[2], position: 1)
+
+      # フィルターなし
+      get("/api/articles", headers:)
+      expect(response).to have_http_status(:ok)
+      res = JSON.parse(response.body)["articles"]
+      expect(res.count).to eq(4)
+      expect(res[0]['title']).to eq(other_4.title)
+      expect(res[1]['title']).to eq(mine_3.title)
+      expect(res[2]['title']).to eq(other_2.title)
+      expect(res[3]['title']).to eq(mine_1.title)
+
+      # フィルターあり
+      get("/api/articles?tag=#{tags[0].name}", headers:)
+      expect(response).to have_http_status(:ok)
+      res = JSON.parse(response.body)["articles"]
+      expect(res.count).to eq(2)
+      expect(res[0]['title']).to eq(other_2.title)
+      expect(res[1]['title']).to eq(mine_1.title)
+
+      # フィルターあり
+      get("/api/articles?tag=#{tags[2].name}", headers:)
+      expect(response).to have_http_status(:ok)
+      res = JSON.parse(response.body)["articles"]
+      expect(res.count).to eq(2)
+      expect(res[0]['title']).to eq(other_4.title)
+      expect(res[1]['title']).to eq(mine_3.title)
     end
   end
 end

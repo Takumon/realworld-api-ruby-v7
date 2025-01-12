@@ -3,7 +3,7 @@ class ArticlesQuery
   OFFSET_DEFAULT = 0
   LIMIT_DEFAULT = 20
 
-  attr_accessor :offset, :limit, :author
+  attr_accessor :offset, :limit, :author, :tag
 
   validates :offset,
     numericality: {
@@ -20,7 +20,10 @@ class ArticlesQuery
     },
     allow_nil: true
 
+  validates :tag, length: { minimum: 1, maximum: 100 }, if: -> { tag.nil? == false }
+
   validate :author_exists
+  validate :tag_exists
 
   def offset
     @offset || OFFSET_DEFAULT
@@ -41,5 +44,17 @@ class ArticlesQuery
       end
 
       errors.add(:author, "authorが見つかりません")
+    end
+
+    def tag_exists
+      if tag.nil?
+        return
+      end
+
+      if Tag.exists?(name: tag)
+        return
+      end
+
+      errors.add(:tag, "tagが見つかりません")
     end
 end
