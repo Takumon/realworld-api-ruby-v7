@@ -13,11 +13,11 @@ FactoryBot.define do
 
     after(:build) do |article, evaluator|
       if evaluator.prefix.present?
-        prefix = evaluator.prefix
-        article.slug = "#{prefix}-#{article.slug}"
-        article.title = "#{prefix}-#{article.title}"
-        article.description = "#{prefix}-#{article.description}"
-        article.body = "#{prefix}-#{article.body}"
+        p = evaluator.prefix
+        article.slug = "#{p}-#{article.slug}"
+        article.title = "#{p}-#{article.title}"
+        article.description = "#{p}-#{article.description}"
+        article.body = "#{p}-#{article.body}"
       end
     end
   end

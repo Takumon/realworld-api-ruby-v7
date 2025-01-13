@@ -1,5 +1,5 @@
 class Api::ArticlesController < ApplicationController
-  before_action :authenticate_request, only: [ :show, :create, :update, :destroy, :index ]
+  before_action :authenticate_request, only: [ :show, :create, :update, :destroy, :index, :feed ]
 
   def index
     query = ArticlesQuery.new(params_articles_query)
@@ -18,6 +18,21 @@ class Api::ArticlesController < ApplicationController
     end
 
     list = list.offset(query.offset).limit(query.limit)
+    render json: res_articles(list)
+  end
+
+  def feed
+    query = ArticlesQuery.new(params_articles_query)
+    if query.invalid?
+      render json: query.errors, status: :bad_request
+      return
+    end
+
+    list = Article.sorted_by_updated_at_desc
+                  .joins(:user).where(users: { id: @current_user.following_ids || [] })
+                  .offset(query.offset)
+                  .limit(query.limit)
+
     render json: res_articles(list)
   end
 
@@ -135,8 +150,9 @@ class Api::ArticlesController < ApplicationController
             :username,
             :bio,
             :image
-            # TODO :following を追加
-          ])
+          ]).merge({
+            following: @current_user.following.exists?(article.user.id)
+          })
         })
     end
 end
