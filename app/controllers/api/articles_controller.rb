@@ -1,5 +1,5 @@
 class Api::ArticlesController < ApplicationController
-  before_action :authenticate_request, only: [ :show, :create, :update, :destroy, :index, :feed ]
+  before_action :authenticate_request
 
   def index
     query = ArticlesQuery.new(params_articles_query)
@@ -100,6 +100,57 @@ class Api::ArticlesController < ApplicationController
     end
   end
 
+
+  def favorite
+    article = Article.find_by(slug: params[:slug])
+    if article.nil?
+      render json: "失敗", status: :not_found
+      return
+    end
+
+    if article.favorited_users.exists?(@current_user.id)
+      # 何もせずに正常終了
+      render json: res_article(article), status: :ok
+      return
+    end
+
+    favorite = Favorite.new(user: @current_user, article: article)
+    if favorite.invalid?
+      render json: { errors: favorite.errors }, status: :bad_request
+      return
+    end
+
+    if favorite.save
+      render json: res_article(article), status: :ok
+    else
+      render json: "失敗", status: :unprocessable_entity
+    end
+  end
+
+
+  def unfavorite
+    article = Article.find_by(slug: params[:slug])
+    if article.nil?
+      render json: "失敗", status: :not_found
+      return
+    end
+
+    favorite = article.favorites.find_by(user_id: @current_user.id, article_id: article.id)
+
+    if favorite.nil?
+      # 何もせずに正常終了
+      render json: res_article(article), status: :ok
+      return
+    end
+
+    if favorite.destroy
+      render json: res_article(article), status: :ok
+    else
+      render json: "失敗", status: :unprocessable_entity
+    end
+  end
+
+
   private
     def params_articles_query
       params.permit(:offset, :limit, :author, :tag)
@@ -146,6 +197,8 @@ class Api::ArticlesController < ApplicationController
           :body
         ]).merge({
           tagList: article.tags.map(&:name),
+          favorited: @current_user.favorites.map(&:article_id).include?(article.id),
+          favoritesCount: article.favorites.count,
           author: article.user.as_json(only: [
             :username,
             :bio,

@@ -3,8 +3,12 @@ class Article < ApplicationRecord
   add_uniqueness_validation
 
   belongs_to :user
+
   has_many :article_tags, -> { order(:position) }, dependent: :destroy
   has_many :tags, through: :article_tags
+
+  has_many :favorites, dependent: :destroy
+  has_many :favorited_users, through: :favorites, source: :user
 
   scope :sorted_by_updated_at_desc, -> { order(updated_at: :desc) }
 

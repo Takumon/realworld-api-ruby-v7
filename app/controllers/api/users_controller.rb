@@ -1,5 +1,5 @@
 class Api::UsersController < ApplicationController
-  before_action :authenticate_request, only: [ :show, :update ]
+  before_action :authenticate_request, except: [ :login, :create ]
   def show
     render json: res_user(@current_user)
   end
