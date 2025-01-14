@@ -19,5 +19,7 @@ Rails.application.routes.draw do
     delete "articles/:slug", to: "articles#destroy"
     post "articles/:slug/favorite", to: "articles#favorite"
     delete "articles/:slug/favorite", to: "articles#unfavorite"
+
+    get "tags", to: "tags#index"
   end
 end

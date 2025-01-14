@@ -25,9 +25,17 @@ FactoryBot.define do
   factory :tag do
     transient do
       started_at { 0 }
+      prefix { nil }
     end
 
     sequence(:name) { |n| "tagname-#{started_at + n}" }
+
+    after(:build) do |tag, evaluator|
+      if evaluator.prefix.present?
+        p = evaluator.prefix
+        tag.name = "#{p}-#{tag.name}"
+      end
+    end
   end
 
   factory :article_tag do
