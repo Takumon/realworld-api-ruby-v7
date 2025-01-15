@@ -44,4 +44,9 @@ FactoryBot.define do
 
     sequence(:position) { |n| n }
   end
+
+  factory :favorite do
+    association :user
+    association :article
+  end
 end

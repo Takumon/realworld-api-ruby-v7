@@ -17,12 +17,16 @@ class Api::ArticlesController < ApplicationController
       list = list.joins(:tags).where(tags: { name: query.tag })
     end
 
+    if query.favorited.present?
+      list = list.joins(favorites: :user).where(users: { username: query.favorited })
+    end
+
     list = list.offset(query.offset).limit(query.limit)
     render json: res_articles(list)
   end
 
   def feed
-    query = ArticlesQuery.new(params_articles_query)
+    query = ArticlesQuery.new(params_articles_feed_query)
     if query.invalid?
       render json: query.errors, status: :bad_request
       return
@@ -153,7 +157,10 @@ class Api::ArticlesController < ApplicationController
 
   private
     def params_articles_query
-      params.permit(:offset, :limit, :author, :tag)
+      params.permit(:offset, :limit, :author, :tag, :favorited)
+    end
+    def params_articles_feed_query
+      params.permit(:offset, :limit)
     end
 
     def params_article_create

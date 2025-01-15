@@ -666,22 +666,56 @@ describe '/api/articles', type: :request do
 
 
   describe "削除 DELETE /:id" do
-    let!(:source_item) { FactoryBot.create(:article, user:) }
-
     # 他のユーザー
-    let!(:other_user) {
-      other_user = FactoryBot.create(:user, email: 'other@sample.com')
-      expect(other_user.valid?(context: :create)).to be_truthy
-      other_user
+    let!(:other1) {
+      other1 = FactoryBot.create(:user, email: 'other1@sample.com')
+      expect(other1.valid?(context: :create)).to be_truthy
+      other1
     }
 
-    let!(:other_item) { FactoryBot.create(:article, slug: 'other-item-slug', user: other_user) }
+    let!(:other2) {
+      other2 = FactoryBot.create(:user, email: 'other2@sample.com')
+      expect(other2.valid?(context: :create)).to be_truthy
+      other2
+    }
+
+    let!(:other3) {
+      other3 = FactoryBot.create(:user, email: 'other3@sample.com')
+      expect(other3.valid?(context: :create)).to be_truthy
+      other3
+    }
+
+    let!(:source_item) {
+      FactoryBot.create(:article, user:)
+    }
+
+    let(:attached_tags) {
+      tags = FactoryBot.create_list(:tag, 3)
+      FactoryBot.create(:article_tag, article: source_item, tag: tags[0])
+      FactoryBot.create(:article_tag, article: source_item, tag: tags[1])
+      FactoryBot.create(:article_tag, article: source_item, tag: tags[2])
+      tags
+    }
+
+    let(:attached_favorites) {
+      result = []
+      result << FactoryBot.create(:favorite, article: source_item, user: other1)
+      result << FactoryBot.create(:favorite, article: source_item, user: other2)
+      result
+    }
+
+
+    let!(:other_item) { FactoryBot.create(:article, slug: 'other-item-slug', user: other1) }
 
     context '正常なリクエストの場合' do
       it '削除される' do
         expect {
           delete("/api/articles/#{source_item.slug}", headers:)
         }.to change(Article, :count).by(-1)
+        .and change(ArticleTag, :count).by(-1 * attached_tags.size)
+        .and change(Tag, :count).by(0) # タグ自体は削除されない
+        .and change(Favorite, :count).by(-1 * attached_favorites.size)
+
         expect(response).to have_http_status(:ok)
         expect(Article.exists?(source_item.id)).to be_falsey # 存在しない
       end
@@ -719,16 +753,64 @@ describe '/api/articles', type: :request do
 
 
   describe "詳細 GET /:id" do
-    let!(:source_item) { FactoryBot.create(:article, slug: 'source-item-slug', user:) }
-
     # 他のユーザー
-    let!(:other_user) {
-      other_user = FactoryBot.create(:user, email: 'other@sample.com')
-      expect(other_user.valid?(context: :create)).to be_truthy
-      other_user
+    let!(:other1) {
+      other1 = FactoryBot.create(:user, prefix: 'other1')
+      expect(other1.valid?(context: :create)).to be_truthy
+      other1
     }
 
-    let!(:other_item) { FactoryBot.create(:article, slug: 'other-item-slug', user: other_user) }
+    let!(:other2) {
+      other2 = FactoryBot.create(:user, prefix: 'other2')
+      expect(other2.valid?(context: :create)).to be_truthy
+      other2
+    }
+
+    let!(:other3) {
+      other3 = FactoryBot.create(:user, prefix: 'other3')
+      expect(other3.valid?(context: :create)).to be_truthy
+      other3
+    }
+
+    let!(:tags) { FactoryBot.create_list(:tag, 5) }
+
+    let!(:source_item) {
+      article = FactoryBot.create(:article, slug: 'source-item-slug', user:)
+      FactoryBot.create(:article_tag, article: article, tag: tags[0])
+      FactoryBot.create(:article_tag, article: article, tag: tags[1])
+
+      FactoryBot.create(:favorite, article: article, user: other1)
+      FactoryBot.create(:favorite, article: article, user: other2)
+
+      article
+    }
+
+    # タグあり、お気に入りあり
+    let!(:other1_item) {
+      article = FactoryBot.create(:article, slug: 'other1-item-slug', user:)
+      FactoryBot.create(:article_tag, article: article, tag: tags[2])
+
+      FactoryBot.create(:favorite, article: article, user: other3)
+      article
+    }
+
+    # タグあり、お気に入りなし
+    let!(:other2_item) {
+      article = FactoryBot.create(:article, slug: 'other2-item-slug', user:)
+      article
+    }
+
+    # タグあり、お気に入りあり
+    let!(:other3_item) {
+      article = FactoryBot.create(:article, slug: 'other3-item-slug', user:)
+      FactoryBot.create(:article_tag, article: article, tag: tags[3])
+      FactoryBot.create(:article_tag, article: article, tag: tags[4])
+
+      FactoryBot.create(:favorite, article: article, user: user)
+      FactoryBot.create(:favorite, article: article, user: other3)
+      article
+    }
+
 
 
     context '正常なリクエストの場合' do
@@ -750,6 +832,43 @@ describe '/api/articles', type: :request do
         expect(actual['author']['boi']).to eq(user[:bio])
         expect(actual['author']['image']).to eq(user[:image])
         expect(actual['author']['email']).to be nil # emailは含まれない
+
+        expect(actual['tagList'][0]).to eq(tags[0].name)
+        expect(actual['tagList'][1]).to eq(tags[1].name)
+
+        expect(actual['favorited']).to eq(false)
+        expect(actual['favoritesCount']).to eq(2)
+      end
+    end
+
+    context 'タグなしお気に入りなしの場合' do
+      it '記事が取得できる' do
+        get("/api/articles/#{other2_item.slug}", headers:)
+        expect(response).to have_http_status(:ok)
+
+        actual = JSON.parse(response.body)['article']
+        expect(actual['id']).to eq(other2_item.id)
+
+        expect(actual['tagList']).to eq([])
+
+        expect(actual['favorited']).to eq(false)
+        expect(actual['favoritesCount']).to eq(0)
+      end
+    end
+
+    context '自分がお気に入りにしている場合' do
+      it '記事が取得できる' do
+        get("/api/articles/#{other3_item.slug}", headers:)
+        expect(response).to have_http_status(:ok)
+
+        actual = JSON.parse(response.body)['article']
+        expect(actual['id']).to eq(other3_item.id)
+
+        expect(actual['tagList'][0]).to eq(tags[3].name)
+        expect(actual['tagList'][1]).to eq(tags[4].name)
+
+        expect(actual['favorited']).to eq(true)
+        expect(actual['favoritesCount']).to eq(2)
       end
     end
 
@@ -763,13 +882,6 @@ describe '/api/articles', type: :request do
     context '存在しない記事を更新しようとする' do
       it '404エラーになる' do
         get("/api/articles/non-existent-slug", headers:)
-        expect(response).to have_http_status(:not_found)
-      end
-    end
-
-    context '他ユーザーの記事を更新しようとする' do
-      it '404エラーになる' do
-        get("/api/articles/#{other_item.slug}", headers:)
         expect(response).to have_http_status(:not_found)
       end
     end
@@ -931,6 +1043,14 @@ describe '/api/articles', type: :request do
         it '入力チェックエラーになる' do
           tag_name = 'invalid_tag'
           get("/api/articles?tag=#{tag_name}", headers:)
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      context '存在しないfavorited' do
+        it '入力チェックエラーになる' do
+          user_name = 'fictional_user'
+          get("/api/articles?favorited=#{user_name}", headers:)
           expect(response).to have_http_status(:bad_request)
         end
       end
@@ -1167,6 +1287,53 @@ describe '/api/articles', type: :request do
 
       # フィルターあり
       get("/api/articles?tag=#{tags[2].name}", headers:)
+      expect(response).to have_http_status(:ok)
+      res = JSON.parse(response.body)["articles"]
+      expect(res.count).to eq(2)
+      expect(res[0]['title']).to eq(other_4.title)
+      expect(res[1]['title']).to eq(mine_3.title)
+    end
+
+
+    it "お気に入りでフィルターできる" do
+      now = Time.current
+
+      mine_1 = FactoryBot.create(:article, user: user, prefix: '1', updated_at: now + 1.day, created_at: now)
+      FactoryBot.create(:favorite, article: mine_1, user: user)
+      FactoryBot.create(:favorite, article: mine_1, user: other1)
+
+      other_2 = FactoryBot.create(:article, user: other1, prefix: '2', updated_at: now + 2.day, created_at: now)
+      FactoryBot.create(:favorite, article: other_2, user: user)
+      FactoryBot.create(:favorite, article: other_2, user: other1)
+
+      mine_3 = FactoryBot.create(:article, user: user, prefix: '3', updated_at: now + 3.day, created_at: now)
+      FactoryBot.create(:favorite, article: mine_3, user: other1)
+      FactoryBot.create(:favorite, article: mine_3, user: other2)
+
+      other_4 = FactoryBot.create(:article, user: other1, prefix: '4', updated_at: now + 4.day, created_at: now)
+      FactoryBot.create(:favorite, article: other_4, user: other1)
+      FactoryBot.create(:favorite, article: other_4, user: other2)
+
+      # フィルターなし
+      get("/api/articles", headers:)
+      expect(response).to have_http_status(:ok)
+      res = JSON.parse(response.body)["articles"]
+      expect(res.count).to eq(4)
+      expect(res[0]['title']).to eq(other_4.title)
+      expect(res[1]['title']).to eq(mine_3.title)
+      expect(res[2]['title']).to eq(other_2.title)
+      expect(res[3]['title']).to eq(mine_1.title)
+
+      # フィルターあり
+      get("/api/articles?favorited=#{user.username}", headers:)
+      expect(response).to have_http_status(:ok)
+      res = JSON.parse(response.body)["articles"]
+      expect(res.count).to eq(2)
+      expect(res[0]['title']).to eq(other_2.title)
+      expect(res[1]['title']).to eq(mine_1.title)
+
+      # フィルターあり
+      get("/api/articles?favorited=#{other2.username}", headers:)
       expect(response).to have_http_status(:ok)
       res = JSON.parse(response.body)["articles"]
       expect(res.count).to eq(2)
