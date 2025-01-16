@@ -155,6 +155,57 @@ class Api::ArticlesController < ApplicationController
   end
 
 
+  def comments
+    article = Article.find_by(slug: params[:slug])
+    if article.nil?
+      render json: "失敗", status: :not_found
+      return
+    end
+
+    render json: res_comments(article.comments), status: :ok
+  end
+
+  def create_comment
+    article = Article.find_by(slug: params[:slug])
+    if article.nil?
+      render json: "失敗", status: :not_found
+      return
+    end
+
+    comment = Comment.new(**params_comment_create, article:, user: @current_user)
+    if comment.invalid?
+      render json: { errors: comment.errors }, status: :bad_request
+      return
+    end
+
+    if comment.save
+      render json: res_comment(comment), status: :ok
+    else
+      render json: "失敗", status: :unprocessable_entity
+    end
+  end
+
+  def delete_comment
+    comment = Comment.find_by(id: params[:id])
+    if comment.nil?
+      # 存在しないので何もせずに正常終了
+      render json: {}, status: :ok
+      return
+    end
+
+    if comment.user_id != @current_user.id
+      render json: "失敗", status: :forbidden
+      return
+    end
+
+    if comment.destroy
+      render json: {}, status: :ok
+    else
+      render json: "失敗", status: :unprocessable_entity
+    end
+  end
+
+
   private
     def params_articles_query
       params.permit(:offset, :limit, :author, :tag, :favorited)
@@ -179,6 +230,12 @@ class Api::ArticlesController < ApplicationController
         :description,
         :body,
         tagList: []
+      )
+    end
+
+    def params_comment_create
+      params.require(:comment).permit(
+        :body
       )
     end
 
@@ -214,5 +271,32 @@ class Api::ArticlesController < ApplicationController
             following: @current_user.following.exists?(article.user.id)
           })
         })
+    end
+
+    def res_comments(comments)
+      {
+        comments: comments.map { |comment| comment_to_json(comment) }
+      }
+    end
+
+    def res_comment(comment)
+      {
+        comment: comment_to_json(comment)
+      }
+    end
+
+    def comment_to_json(comment)
+      comment.as_json(only: [
+          :id,
+          :body,
+          :created_at,
+          :updated_at
+          ]).merge({
+            author: comment.user.as_json(only: [
+              :username,
+              :bio,
+              :image
+            ])
+          })
     end
 end

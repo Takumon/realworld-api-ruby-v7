@@ -49,4 +49,23 @@ FactoryBot.define do
     association :user
     association :article
   end
+
+  factory :comment do
+    association :article
+    association :user
+
+    transient do
+      started_at { 0 }
+      prefix { nil }
+    end
+
+    sequence(:body) { |n| "コメント本文-#{started_at + n}" }
+
+    after(:build) do |comment, evaluator|
+      if evaluator.prefix.present?
+        p = evaluator.prefix
+        comment.body = "#{p}-#{comment.body}"
+      end
+    end
+  end
 end

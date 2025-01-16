@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_01_14_223516) do
+ActiveRecord::Schema[7.2].define(version: 2025_01_15_233541) do
   create_table "article_tags", force: :cascade do |t|
     t.integer "article_id", null: false
     t.integer "tag_id", null: false
@@ -31,6 +31,16 @@ ActiveRecord::Schema[7.2].define(version: 2025_01_14_223516) do
     t.datetime "updated_at", null: false
     t.index ["slug", "user_id"], name: "index_articles_on_slug_and_user", unique: true
     t.index ["user_id"], name: "index_articles_on_user_id"
+  end
+
+  create_table "comments", force: :cascade do |t|
+    t.integer "article_id", null: false
+    t.integer "user_id", null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["article_id"], name: "index_comments_on_article_id"
+    t.index ["user_id"], name: "index_comments_on_user_id"
   end
 
   create_table "favorites", force: :cascade do |t|
@@ -74,6 +84,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_01_14_223516) do
 
   add_foreign_key "article_tags", "articles", on_delete: :cascade
   add_foreign_key "article_tags", "tags"
+  add_foreign_key "comments", "articles", on_delete: :cascade
+  add_foreign_key "comments", "users", on_delete: :cascade
   add_foreign_key "favorites", "articles", on_delete: :cascade
   add_foreign_key "favorites", "users", on_delete: :cascade
   add_foreign_key "relationships", "users", column: "followed_id"

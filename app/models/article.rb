@@ -10,6 +10,8 @@ class Article < ApplicationRecord
   has_many :favorites, dependent: :destroy
   has_many :favorited_users, through: :favorites, source: :user
 
+  has_many :comments, dependent: :destroy
+
   scope :sorted_by_updated_at_desc, -> { order(updated_at: :desc) }
 
   attr_accessor :tagList

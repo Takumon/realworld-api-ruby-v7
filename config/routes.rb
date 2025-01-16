@@ -20,6 +20,10 @@ Rails.application.routes.draw do
     post "articles/:slug/favorite", to: "articles#favorite"
     delete "articles/:slug/favorite", to: "articles#unfavorite"
 
+    get "articles/:slug/comments", to: "articles#comments"
+    post "articles/:slug/comments", to: "articles#create_comment"
+    delete "articles/:slug/comments/:id", to: "articles#delete_comment"
+
     get "tags", to: "tags#index"
   end
 end
