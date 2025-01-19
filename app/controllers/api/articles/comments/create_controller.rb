@@ -5,20 +5,18 @@ module Api
         def phase_invoke
           article = Article.find_by(slug: params[:slug])
           if article.nil?
-            render json: "失敗", status: :not_found
-            return
+            return [ { errors: "失敗" }, :not_found ]
           end
 
           comment = Comment.new(**params_comment_create, article:, user: @current_user)
           if comment.invalid?
-            render json: { errors: comment.errors }, status: :bad_request
-            return
+            return [ { errors: comment.errors }, :bad_request ]
           end
 
           if comment.save
-            render json: res_comment(comment), status: :ok
+            [ res_comment(comment), :ok ]
           else
-            render json: "失敗", status: :unprocessable_entity
+            [ { errors: "失敗" }, :unprocessable_entity ]
           end
         end
 

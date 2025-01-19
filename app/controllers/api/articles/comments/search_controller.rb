@@ -5,11 +5,10 @@ module Api
         def phase_invoke
           article = Article.find_by(slug: params[:slug])
           if article.nil?
-            render json: "失敗", status: :not_found
-            return
+            return [ { errors: "失敗" },  :not_found ]
           end
 
-          render json: res_comments(article.comments, @current_user), status: :ok
+          [ res_comments(article.comments, @current_user),  :ok ]
         end
 
         private

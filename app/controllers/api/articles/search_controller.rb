@@ -4,8 +4,7 @@ module Api
       def phase_invoke
         query = ArticlesQuery.new(params_articles_query)
         if query.invalid?
-          render json: query.errors, status: :bad_request
-          return
+          return [ query.errors, :bad_request ]
         end
 
         list = Article.sorted_by_updated_at_desc
@@ -22,7 +21,7 @@ module Api
         end
 
         list = list.offset(query.offset).limit(query.limit)
-        render json: res_articles(list)
+        [ res_articles(list), :ok ]
       end
 
 

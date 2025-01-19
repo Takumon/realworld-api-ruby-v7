@@ -7,17 +7,15 @@ module Api
         req = LoginRequest.new(params_login)
 
         if req.invalid?
-          render json: req.errors, status: :bad_request
-          return
+          return [ req.errors, :bad_request ]
         end
 
         user = ::User.authenticate_by(email: req.email, password: req.password)
         if user.nil?
-          render json: { error: "メールアドレスとパスワードに組み合わせが間違っています" }, status: :unauthorized
-          return
+          return [ { error: "メールアドレスとパスワードに組み合わせが間違っています" }, :unauthorized ]
         end
 
-        render json: res_user_with_token(user)
+        [ res_user_with_token(user), :ok ]
       end
 
       private

@@ -4,11 +4,10 @@ module Api
       def phase_invoke
         user = ::User.find_by(username: params[:username])
         if user.nil?
-          render json: { errors: [ { 'username': "存在しないユーザー名です" } ] }, status: :not_found
-          return
+          return [ { errors: [ { 'username': "存在しないユーザー名です" } ] },  :not_found ]
         end
 
-        render json: user.res({ root: true }, @current_user)
+        [ user.res({ root: true }, @current_user), :ok ]
       end
 
       private

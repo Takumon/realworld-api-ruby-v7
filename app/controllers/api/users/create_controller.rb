@@ -7,14 +7,13 @@ module Api
         user = ::User.new(params_user_create)
 
         if user.invalid?
-          render json: user.errors, status: :bad_request
-          return
+          return [ user.errors, :bad_request ]
         end
 
         if user.save
-          render json: res_user_with_token(user), status: :created
+          [ res_user_with_token(user), :created ]
         else
-          render json: "失敗", status: :unprocessable_entity
+          [ { errors: "失敗" }, :unprocessable_entity ]
         end
       end
 

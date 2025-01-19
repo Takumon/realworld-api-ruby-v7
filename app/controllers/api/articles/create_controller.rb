@@ -6,14 +6,13 @@ module Api
         article.user = @current_user # 投稿者は自分とする
 
         if article.invalid?
-          render json: { errors: article.errors }, status: :bad_request
-          return
+          return [ { errors: article.errors }, :bad_request ]
         end
 
         if article.save_with_relations
-          render json: res_article(article), status: :created
+          [ res_article(article), :created ]
         else
-          render json: "失敗", status: :unprocessable_entity
+          [ { errors: "失敗" }, :unprocessable_entity ]
         end
       end
 

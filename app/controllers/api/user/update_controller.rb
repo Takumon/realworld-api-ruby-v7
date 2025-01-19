@@ -5,17 +5,16 @@ module Api
         begin
           @current_user.assign_attributes(params_user_update)
           if @current_user.invalid?
-            render json: @current_user.errors, status: :bad_request
-            return
+            return [ @current_user.errors, :bad_request ]
           end
 
           if @current_user.save
-            render json: @current_user.res({ root: true }, @current_user)
+            [ @current_user.res({ root: true }, @current_user) ]
           else
-            render json: @current_user.errors, status: :unprocessable_entity
+            [ @current_user.errors, :unprocessable_entity ]
           end
         rescue ActiveRecord::StaleObjectError
-          render json: { error: "他のユーザーによって更新されています。最新のデータを取得してください" }, status: :conflict
+          [ { error: "他のユーザーによって更新されています。最新のデータを取得してください" }, :conflict ]
         end
       end
 

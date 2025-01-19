@@ -1,6 +1,10 @@
 Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
   namespace :api do
+    match "health", to: "health#invoke", format: false, via: :head
+    options "health", to: "health#invoke", format: false, via: :head
+    get "health", to: "health#invoke", format: false
+
     namespace :users do
       post "/login", to: "login#invoke"
       post "", to: "create#invoke"

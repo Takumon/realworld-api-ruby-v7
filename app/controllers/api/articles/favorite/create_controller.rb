@@ -5,26 +5,23 @@ module Api
         def phase_invoke
           article = Article.find_by(slug: params[:slug])
           if article.nil?
-            render json: "失敗", status: :not_found
-            return
+            return [ { errors: "失敗" }, :not_found ]
           end
 
           if article.favorited_users.exists?(@current_user.id)
             # 何もせずに正常終了
-            render json: res_article(article), status: :ok
-            return
+            return [ res_article(article), :ok ]
           end
 
           favorite = ::Favorite.new(user: @current_user, article: article)
           if favorite.invalid?
-            render json: { errors: favorite.errors }, status: :bad_request
-            return
+            return [  { errors: favorite.errors }, :bad_request ]
           end
 
           if favorite.save
-            render json: res_article(article), status: :ok
+            [  res_article(article), :ok ]
           else
-            render json: "失敗", status: :unprocessable_entity
+            [  "失敗", :unprocessable_entity ]
           end
         end
 

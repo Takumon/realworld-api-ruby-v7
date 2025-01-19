@@ -4,7 +4,7 @@ module Api
       skip_before_action :authenticate_request
 
       def phase_invoke
-        render json: { tags: Tag.pluck(:name) }
+        [ { tags: Tag.pluck(:name) }, :ok ]
       end
     end
   end

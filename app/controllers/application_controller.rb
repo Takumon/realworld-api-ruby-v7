@@ -2,11 +2,20 @@ class ApplicationController < ActionController::API
   before_action :authenticate_request
 
   def invoke
-    phase_invoke
+    data, status = phase_invoke
+    phase_response(data, status)
   end
 
   def phase_invoke
     rails NotImplementedError, "You must implement #{self.class}##{__method__}"
+  end
+
+  def phase_response
+    rails NotImplementedError, "You must implement #{self.class}##{__method__}"
+  end
+
+  def health_data
+    { status: "ok" }
   end
 
   private

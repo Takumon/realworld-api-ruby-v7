@@ -6,19 +6,17 @@ module Api
           comment = Comment.find_by(id: params[:id])
           if comment.nil?
             # 存在しないので何もせずに正常終了
-            render json: {}, status: :ok
-            return
+            return [ {},  :ok ]
           end
 
           if comment.user_id != @current_user.id
-            render json: "失敗", status: :forbidden
-            return
+            return [ { errors: "失敗" },  :forbidden ]
           end
 
           if comment.destroy
-            render json: {}, status: :ok
+            [ {},  :ok ]
           else
-            render json: "失敗", status: :unprocessable_entity
+            [ { errors: "失敗" },  :unprocessable_entity ]
           end
         end
 

@@ -4,22 +4,20 @@ module Api
       def phase_invoke
         user = ::User.find_by(username: params[:username])
         if user.nil?
-          render json: { errors: [ { 'username': "存在しないユーザー名です" } ] }, status: :not_found
-          return
+          return [ { errors: [ { 'username': "存在しないユーザー名です" } ] },  :not_found ]
         end
 
         relationship = Relationship.find_by(follower: @current_user, followed: user)
         if relationship.nil?
           # フォローしていないなので何もしない
-          render json: user.res({ root: true }, @current_user)
-          return
+          return [ user.res({ root: true }, @current_user) ]
         end
 
         if relationship.destroy
           user.reload # フォロー状態を取得
-          render json: user.res({ root: true }, @current_user)
+          [ user.res({ root: true }, @current_user), :ok ]
         else
-          render json: "失敗",  status: :unprocessable_entity
+          [ "失敗",   :unprocessable_entity ]
         end
       end
 
