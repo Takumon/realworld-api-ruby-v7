@@ -1,7 +1,7 @@
 module Api
   module Tags
     class SearchController < Api::Controller
-      skip_before_action :authenticate_request
+      set :is_required_auth, false
 
       def phase_invoke
         [ { tags: Tag.pluck(:name) }, :ok ]

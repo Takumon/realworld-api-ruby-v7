@@ -5,18 +5,18 @@ module Api
         def phase_invoke
           article = Article.find_by(slug: params[:slug])
           if article.nil?
-            return [ { errors: "失敗" }, :not_found ]
+            raise ValidationError.new({ 'slug': "存在しない記事です" }, :not_found)
           end
 
           comment = Comment.new(**params_comment_create, article:, user: @current_user)
           if comment.invalid?
-            return [ { errors: comment.errors }, :bad_request ]
+            raise ValidationError.new(comment.errors, :bad_request)
           end
 
           if comment.save
             [ res_comment(comment), :ok ]
           else
-            [ { errors: "失敗" }, :unprocessable_entity ]
+            raise ValidationError.new("失敗", :unprocessable_entity)
           end
         end
 
@@ -26,6 +26,8 @@ module Api
           params.require(:comment).permit(
             :body
           )
+        rescue ActionController::ParameterMissing => e
+          raise ValidationError.new("リクエストが不正です", :bad_request)
         end
 
         def res_comment(comment)

@@ -22,7 +22,7 @@ describe 'GET /api/profiles/:username', type: :request do
     post('/api/users/login', params:, headers: none_auth_headers, as: :json)
 
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
 
     res['token']
@@ -48,7 +48,7 @@ describe 'GET /api/profiles/:username', type: :request do
     it "プロフィールが取得できる" do
       get "/api/profiles/#{other.username}", headers:, as: :json
       expect(response).to have_http_status(:ok)
-      res = JSON.parse(response.body)['user']
+      res = JSON.parse(response.body)['data']['user']
       expect(res['username']).to eq(other.username)
       expect(res['following']).to eq(false) # フォローしていない
     end
@@ -61,7 +61,7 @@ describe 'GET /api/profiles/:username', type: :request do
 
       get "/api/profiles/#{other2.username}", headers:, as: :json
       expect(response).to have_http_status(:ok)
-      res = JSON.parse(response.body)['user']
+      res = JSON.parse(response.body)['data']['user']
       expect(res['username']).to eq(other2.username)
       expect(res['following']).to eq(true) # フォローしている
     end

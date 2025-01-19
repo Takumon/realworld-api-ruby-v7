@@ -1,26 +1,28 @@
 module Api
   module Users
     class CreateController < Api::Controller
-      skip_before_action :authenticate_request
+      set :is_required_auth, false
 
       def phase_invoke
         user = ::User.new(params_user_create)
 
         if user.invalid?
-          return [ user.errors, :bad_request ]
+          raise ValidationError.new(user.errors, :bad_request)
         end
 
-        if user.save
-          [ res_user_with_token(user), :created ]
-        else
-          [ { errors: "失敗" }, :unprocessable_entity ]
+        unless user.save
+          raise ValidationError.new("失敗", :unprocessable_entity)
         end
+
+        [ res_user_with_token(user), :ok ]
       end
 
       private
 
       def params_user_create
         params.require(:user).permit(:username, :email, :password)
+      rescue ActionController::ParameterMissing => e
+        raise ValidationError.new("リクエストが不正です", :bad_request)
       end
 
       def res_user_with_token(user)

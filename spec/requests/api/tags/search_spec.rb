@@ -22,7 +22,7 @@ describe 'GET /api/tags', type: :request do
     post('/api/users/login', params:, headers: none_auth_headers, as: :json)
 
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
 
     res['token']
@@ -42,7 +42,7 @@ describe 'GET /api/tags', type: :request do
 
       get('/api/tags', headers: none_auth_headers)
       expect(response).to have_http_status(:success)
-      res = JSON.parse(response.body)
+      res = JSON.parse(response.body)['data']
       expect(res['tags']).to eq(tags.map(&:name)) # ソートの順は？
     end
   end
@@ -53,7 +53,7 @@ describe 'GET /api/tags', type: :request do
 
       get('/api/tags', headers:)
       expect(response).to have_http_status(:success)
-      res = JSON.parse(response.body)
+      res = JSON.parse(response.body)['data']
       expect(res['tags']).to eq(tags.map(&:name)) # ソートの順は？
     end
   end
@@ -62,7 +62,7 @@ describe 'GET /api/tags', type: :request do
     it "タグ一覧を取得できる" do
       get('/api/tags', headers:)
       expect(response).to have_http_status(:success)
-      res = JSON.parse(response.body)
+      res = JSON.parse(response.body)['data']
       expect(res['tags'].size).to eq(0)
     end
   end

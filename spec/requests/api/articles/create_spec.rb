@@ -22,7 +22,7 @@ describe 'POST /api/articles', type: :request do
     post('/api/users/login', params:, headers: none_auth_headers, as: :json)
 
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
 
     res['token']
@@ -69,7 +69,7 @@ describe 'POST /api/articles', type: :request do
       # expect { post('/api/articles', params:, headers:, as: :json) }.to change(Article, :count).by(1)
       post('/api/articles', params:, headers:, as: :json)
       expect(response).to have_http_status(:success)
-      actual = JSON.parse(response.body)['article']
+      actual = JSON.parse(response.body)['data']['article']
       input = params[:article]
       expect(actual['id']).not_to be nil
       expect(actual['created_at']).to be nil
@@ -124,7 +124,7 @@ describe 'POST /api/articles', type: :request do
 
       it '入力チェックエラーにならない' do
         post('/api/articles', params:, headers:, as: :json)
-        expect(response).to have_http_status(:created)
+        expect(response).to have_http_status(:ok)
       end
     end
 
@@ -159,7 +159,7 @@ describe 'POST /api/articles', type: :request do
 
       it '400エラーになる' do
         post('/api/articles', params:, headers:, as: :json)
-        expect(response).to have_http_status(:created)
+        expect(response).to have_http_status(:ok)
       end
     end
 

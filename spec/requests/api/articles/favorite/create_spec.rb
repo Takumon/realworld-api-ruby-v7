@@ -22,7 +22,7 @@ describe 'POST /api/articles/:slug/favorite', type: :request do
     post('/api/users/login', params:, headers: none_auth_headers, as: :json)
 
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
 
     res['token']
@@ -72,7 +72,7 @@ describe 'POST /api/articles/:slug/favorite', type: :request do
         post("/api/articles/#{source_item.slug}/favorite", headers:, as: :json)
       }.to change(Favorite, :count).by(1)
       expect(response).to have_http_status(:success)
-      res = JSON.parse(response.body)['article']
+      res = JSON.parse(response.body)['data']['article']
       expect(res['favorited']).to eq(true)
       expect(res['favoritesCount']).to eq(2)
     end
@@ -87,7 +87,7 @@ describe 'POST /api/articles/:slug/favorite', type: :request do
         post("/api/articles/#{source_item.slug}/favorite", headers:, as: :json)
       }.to change(Favorite, :count).by(0)
       expect(response).to have_http_status(:success)
-      res = JSON.parse(response.body)['article']
+      res = JSON.parse(response.body)['data']['article']
       expect(res['favorited']).to eq(true)
       expect(res['favoritesCount']).to eq(2)
     end

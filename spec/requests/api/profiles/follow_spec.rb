@@ -20,9 +20,8 @@ describe "POST api/profiles/:username/follow" do
   let!(:token) {
     params = { user: { email: user.email, password: user.password } }
     post('/api/users/login', params:, headers: none_auth_headers, as: :json)
-
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
 
     res['token']
@@ -69,7 +68,7 @@ describe "POST api/profiles/:username/follow" do
     it "404エラーになる" do
       post "/api/profiles/fictitious_user_name/follow", headers:, as: :json
       expect(response).to have_http_status(:not_found)
-      errors = JSON.parse(response.body)["errors"]
+      errors = JSON.parse(response.body)['errors']
       expect(errors[0]['username']).to eq('存在しないユーザー名です')
     end
   end

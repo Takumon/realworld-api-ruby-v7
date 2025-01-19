@@ -22,7 +22,7 @@ describe 'GET /api/articles/feed', type: :request do
     post('/api/users/login', params:, headers: none_auth_headers, as: :json)
 
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
 
     res['token']
@@ -153,7 +153,7 @@ describe 'GET /api/articles/feed', type: :request do
           get("/api/articles/feed?limit=#{limit}", headers:)
           expect(response).to have_http_status(:ok)
 
-          res = JSON.parse(response.body)["articles"]
+          res = JSON.parse(response.body)['data']['articles']
           expect(res.count).to eq(expected_count)
         end
       end
@@ -178,7 +178,7 @@ describe 'GET /api/articles/feed', type: :request do
           get("/api/articles/feed?offset=#{offset}", headers:)
           expect(response).to have_http_status(:ok)
 
-          res = JSON.parse(response.body)["articles"]
+          res = JSON.parse(response.body)['data']['articles']
           expect(res.count).to eq(expected_count)
         end
       end
@@ -204,7 +204,7 @@ describe 'GET /api/articles/feed', type: :request do
           get("/api/articles/feed?limit=#{limit}&offset=#{offset}", headers:)
           expect(response).to have_http_status(:ok)
 
-          res = JSON.parse(response.body)["articles"]
+          res = JSON.parse(response.body)['data']['articles']
           expect(res.count).to eq(expected_count)
         end
       end
@@ -237,7 +237,7 @@ describe 'GET /api/articles/feed', type: :request do
     get("/api/articles/feed", headers:)
     expect(response).to have_http_status(:ok)
 
-    res = JSON.parse(response.body)["articles"]
+    res = JSON.parse(response.body)['data']['articles']
     expect(res.count).to eq(6)
     expect(res[0]['title']).to eq(item_8.title)
     expect(res[0]['author']['following']).to eq(true)

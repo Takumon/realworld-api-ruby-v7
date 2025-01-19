@@ -22,7 +22,7 @@ describe 'PUT /api/articles/:slug', type: :request do
     post('/api/users/login', params:, headers: none_auth_headers, as: :json)
 
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
 
     res['token']
@@ -65,7 +65,7 @@ describe 'PUT /api/articles/:slug', type: :request do
 
         expect(response).to have_http_status(:ok)
 
-        actual = JSON.parse(response.body)['article']
+        actual = JSON.parse(response.body)['data']['article']
         expect(actual['tagList'].size).to eq(1)
         expect(actual['tagList'][0]).to eq(tags[0].name)
       end
@@ -91,7 +91,7 @@ describe 'PUT /api/articles/:slug', type: :request do
 
         expect(response).to have_http_status(:ok)
 
-        actual = JSON.parse(response.body)['article']
+        actual = JSON.parse(response.body)['data']['article']
         expect(actual['tagList'].size).to eq(1)
         expect(actual['tagList'][0]).to eq(new_tag_name)
       end
@@ -121,7 +121,7 @@ describe 'PUT /api/articles/:slug', type: :request do
         .and change(Tag, :count).by(0) # タグは削除されない
         expect(response).to have_http_status(:ok)
 
-        actual = JSON.parse(response.body)['article']
+        actual = JSON.parse(response.body)['data']['article']
         expect(actual['tagList'].size).to eq(0)
       end
     end
@@ -142,7 +142,7 @@ describe 'PUT /api/articles/:slug', type: :request do
 
         expect(response).to have_http_status(:ok)
 
-        actual = JSON.parse(response.body)['article']
+        actual = JSON.parse(response.body)['data']['article']
         expect(actual['tagList'].size).to eq(1)
         expect(actual['tagList'][0]).to eq(new_tag_name)
 
@@ -159,7 +159,7 @@ describe 'PUT /api/articles/:slug', type: :request do
         .and change(Tag, :count).by(0)
         expect(response).to have_http_status(:ok)
 
-        actual = JSON.parse(response.body)['article']
+        actual = JSON.parse(response.body)['data']['article']
         expect(actual['tagList'].size).to eq(1)
       end
     end
@@ -220,7 +220,7 @@ describe 'PUT /api/articles/:slug', type: :request do
         .and change(Tag, :count).by(0)
 
         expect(response).to have_http_status(:ok)
-        actual = JSON.parse(response.body)['article']
+        actual = JSON.parse(response.body)['data']['article']
         input = params[:article]
         expect(actual['title']).to eq(input[:title])
         expect(actual['description']).to eq(input[:description])

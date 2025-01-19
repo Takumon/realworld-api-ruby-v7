@@ -4,7 +4,7 @@ module Api
       def phase_invoke
         query = ArticlesQuery.new(params_articles_feed_query)
         if query.invalid?
-          return [ query.errors, :bad_request ]
+          raise ValidationError.new(query.errors, :bad_request)
         end
 
         list = Article.sorted_by_updated_at_desc
@@ -18,6 +18,8 @@ module Api
       private
       def params_articles_feed_query
         params.permit(:offset, :limit)
+      rescue ActionController::ParameterMissing => e
+        raise ValidationError.new("リクエストが不正です", :bad_request)
       end
 
       def res_articles(articles)

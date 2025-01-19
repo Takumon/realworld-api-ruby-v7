@@ -5,16 +5,16 @@ module Api
         begin
           @current_user.assign_attributes(params_user_update)
           if @current_user.invalid?
-            return [ @current_user.errors, :bad_request ]
+            raise ValidationError.new(@current_user.errors, :bad_request)
           end
 
-          if @current_user.save
-            [ @current_user.res({ root: true }, @current_user) ]
-          else
-            [ @current_user.errors, :unprocessable_entity ]
+          unless @current_user.save
+            raise ValidationError.new(@current_user.errors, :unprocessable_entity)
           end
+
+          [ @current_user.res({ root: true }, @current_user) ]
         rescue ActiveRecord::StaleObjectError
-          [ { error: "他のユーザーによって更新されています。最新のデータを取得してください" }, :conflict ]
+          raise ValidationError.new("他のユーザーによって更新されています。最新のデータを取得してください", :conflict)
         end
       end
 
@@ -22,6 +22,8 @@ module Api
 
       def params_user_update
         params.require(:user).permit(:email, :bio, :image, :lock_version)
+      rescue ActionController::ParameterMissing => e
+        raise ValidationError.new("リクエストが不正です", :bad_request)
       end
     end
   end

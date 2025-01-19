@@ -5,7 +5,7 @@ module Api
         def phase_invoke
           article = Article.find_by(slug: params[:slug])
           if article.nil?
-            return [ { errors: "失敗" }, :not_found ]
+            raise ValidationError.new("失敗", :not_found)
           end
 
           favorite = article.favorites.find_by(user_id: @current_user.id, article_id: article.id)
@@ -15,14 +15,15 @@ module Api
             return [ res_article(article), :ok ]
           end
 
-          if favorite.destroy
-            [ res_article(article), :ok ]
-          else
-            [ { errors: "失敗" }, :unprocessable_entity ]
+          unless favorite.destroy
+            raise ValidationError.new("失敗", :unprocessable_entity)
           end
+
+          [ res_article(article), :ok ]
         end
 
         private
+
         def res_article(article)
           article.res({ root: true }, @current_user)
         end

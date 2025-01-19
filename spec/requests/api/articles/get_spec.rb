@@ -22,7 +22,7 @@ describe 'GET /api/articles/:slug', type: :request do
     post('/api/users/login', params:, headers: none_auth_headers, as: :json)
 
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
 
     res['token']
@@ -101,7 +101,7 @@ describe 'GET /api/articles/:slug', type: :request do
       get("/api/articles/#{source_item.slug}", headers:)
       expect(response).to have_http_status(:ok)
 
-      actual = JSON.parse(response.body)['article']
+      actual = JSON.parse(response.body)['data']['article']
       expect(actual['id']).to eq(source_item.id)
       expect(actual['created_at']).to be nil # 含まれない
       expect(actual['updated_at']).to be nil # 含まれない
@@ -129,7 +129,7 @@ describe 'GET /api/articles/:slug', type: :request do
       get("/api/articles/#{other2_item.slug}", headers:)
       expect(response).to have_http_status(:ok)
 
-      actual = JSON.parse(response.body)['article']
+      actual = JSON.parse(response.body)['data']['article']
       expect(actual['id']).to eq(other2_item.id)
 
       expect(actual['tagList']).to eq([])
@@ -144,7 +144,7 @@ describe 'GET /api/articles/:slug', type: :request do
       get("/api/articles/#{other3_item.slug}", headers:)
       expect(response).to have_http_status(:ok)
 
-      actual = JSON.parse(response.body)['article']
+      actual = JSON.parse(response.body)['data']['article']
       expect(actual['id']).to eq(other3_item.id)
 
       expect(actual['tagList'][0]).to eq(tags[3].name)

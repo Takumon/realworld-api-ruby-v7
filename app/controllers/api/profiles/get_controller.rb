@@ -4,7 +4,7 @@ module Api
       def phase_invoke
         user = ::User.find_by(username: params[:username])
         if user.nil?
-          return [ { errors: [ { 'username': "存在しないユーザー名です" } ] },  :not_found ]
+          raise ValidationError.new({ 'username': "存在しないユーザー名です" },  :not_found)
         end
 
         [ user.res({ root: true }, @current_user), :ok ]

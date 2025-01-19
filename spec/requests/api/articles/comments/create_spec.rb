@@ -22,7 +22,7 @@ describe 'POST /api/articles/:slug/comments/', type: :request do
     post('/api/users/login', params:, headers: none_auth_headers, as: :json)
 
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
 
     res['token']
@@ -59,7 +59,7 @@ describe 'POST /api/articles/:slug/comments/', type: :request do
         post("/api/articles/#{source_item.slug}/comments", params:, headers:, as: :json)
       }.to change(Comment, :count).by(1)
       expect(response).to have_http_status(:ok)
-      res = JSON.parse(response.body)['comment']
+      res = JSON.parse(response.body)['data']['comment']
       expect(res['body']).to eq(params[:comment][:body])
     end
   end
@@ -77,7 +77,7 @@ describe 'POST /api/articles/:slug/comments/', type: :request do
         post("/api/articles/#{source_item.slug}/comments", params:, headers:, as: :json)
       }.to change(Comment, :count).by(1)
       expect(response).to have_http_status(:ok)
-      res = JSON.parse(response.body)['comment']
+      res = JSON.parse(response.body)['data']['comment']
       expect(res['body']).to eq(params[:comment][:body])
 
       # 2回目
@@ -91,7 +91,7 @@ describe 'POST /api/articles/:slug/comments/', type: :request do
         post("/api/articles/#{source_item.slug}/comments", params:, headers:, as: :json)
       }.to change(Comment, :count).by(1)
       expect(response).to have_http_status(:ok)
-      res = JSON.parse(response.body)['comment']
+      res = JSON.parse(response.body)['data']['comment']
       expect(res['body']).to eq(params[:comment][:body])
     end
   end

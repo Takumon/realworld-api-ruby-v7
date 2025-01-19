@@ -11,7 +11,7 @@ describe 'POST /aip/users', type: :request do
     }
 
     expect { post('/api/users', params:) }.to change(User, :count).by(1)
-    expect(response).to have_http_status(:created)
+    expect(response).to have_http_status(:ok)
     # DBに登録されたユーザー情報が正しいか確認
     user = params[:user]
     record = User.find_by(email: user[:email])

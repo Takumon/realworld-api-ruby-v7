@@ -6,14 +6,14 @@ module Api
         article.user = @current_user # 投稿者は自分とする
 
         if article.invalid?
-          return [ { errors: article.errors }, :bad_request ]
+          raise ValidationError.new(article.errors, :bad_request)
         end
 
-        if article.save_with_relations
-          [ res_article(article), :created ]
-        else
-          [ { errors: "失敗" }, :unprocessable_entity ]
+        unless article.save_with_relations
+          raise ValidationError.new("失敗", :unprocessable_entity)
         end
+
+        [ res_article(article), :created ]
       end
 
       private
@@ -25,6 +25,8 @@ module Api
             :body,
             tagList: []
           )
+        rescue ActionController::ParameterMissing => e
+          raise ValidationError.new("リクエストが不正です", :bad_request)
         end
 
         def res_article(article)

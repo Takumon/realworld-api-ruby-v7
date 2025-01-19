@@ -5,20 +5,20 @@ module Api
         article = Article.find_by(slug: params[:slug], user_id: @current_user.id)  # 自分の記事のみ検索
 
         if article.nil?
-          return [ { errors: "失敗" },  :not_found ]
+          raise ValidationError.new("失敗", :not_found)
         end
 
         req = ArticleUpdateRequest.new(params_article_update)
         if req.invalid?
-          return [ article.errors,  :bad_request ]
+          raise ValidationError.new(article.errors,  :bad_request)
         end
 
         req.bind_to(article)
-        if article.save_with_relations
-          [ res_article(article),  :ok ]
-        else
-          [ { errors: "失敗" },  :unprocessable ]
+        unless article.save_with_relations
+          raise ValidationError.new("失敗",  :unprocessable)
         end
+
+        [ res_article(article),  :ok ]
       end
 
       private
@@ -29,6 +29,8 @@ module Api
             :body,
             tagList: []
           )
+        rescue ActionController::ParameterMissing => e
+          raise ValidationError.new("リクエストが不正です", :bad_request)
         end
 
         def res_article(article)

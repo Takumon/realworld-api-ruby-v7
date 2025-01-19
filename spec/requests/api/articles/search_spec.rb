@@ -22,7 +22,7 @@ describe 'GET /api/articles', type: :request do
     post('/api/users/login', params:, headers: none_auth_headers, as: :json)
 
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
 
     res['token']
@@ -214,7 +214,7 @@ describe 'GET /api/articles', type: :request do
           get("/api/articles", headers:)
           expect(response).to have_http_status(:ok)
 
-          res = JSON.parse(response.body)["articles"]
+          res = JSON.parse(response.body)['data']['articles']
           expect(res.count).to eq(expected_count)
         end
       end
@@ -239,7 +239,7 @@ describe 'GET /api/articles', type: :request do
           get("/api/articles?limit=#{limit}", headers:)
           expect(response).to have_http_status(:ok)
 
-          res = JSON.parse(response.body)["articles"]
+          res = JSON.parse(response.body)['data']['articles']
           expect(res.count).to eq(expected_count)
         end
       end
@@ -263,7 +263,7 @@ describe 'GET /api/articles', type: :request do
           get("/api/articles?offset=#{offset}", headers:)
           expect(response).to have_http_status(:ok)
 
-          res = JSON.parse(response.body)["articles"]
+          res = JSON.parse(response.body)['data']['articles']
           expect(res.count).to eq(expected_count)
         end
       end
@@ -288,7 +288,7 @@ describe 'GET /api/articles', type: :request do
           get("/api/articles?limit=#{limit}&offset=#{offset}", headers:)
           expect(response).to have_http_status(:ok)
 
-          res = JSON.parse(response.body)["articles"]
+          res = JSON.parse(response.body)['data']['articles']
           expect(res.count).to eq(expected_count)
         end
       end
@@ -321,7 +321,7 @@ describe 'GET /api/articles', type: :request do
     get("/api/articles", headers:)
     expect(response).to have_http_status(:ok)
 
-    res = JSON.parse(response.body)["articles"]
+    res = JSON.parse(response.body)['data']['articles']
     expect(res.count).to eq(9)
     expect(res[0]['title']).to eq(item_9.title)
     expect(res[0]['author']['following']).to eq(false)
@@ -364,7 +364,7 @@ describe 'GET /api/articles', type: :request do
     # フィルターなし
     get("/api/articles", headers:)
     expect(response).to have_http_status(:ok)
-    res = JSON.parse(response.body)["articles"]
+    res = JSON.parse(response.body)['data']['articles']
     expect(res.count).to eq(6)
     expect(res[0]['title']).to eq(other_6.title)
     expect(res[1]['title']).to eq(mine_5.title)
@@ -376,7 +376,7 @@ describe 'GET /api/articles', type: :request do
     # フィルターあり(mine)
     get("/api/articles?author=#{user.username}", headers:)
     expect(response).to have_http_status(:ok)
-    res = JSON.parse(response.body)["articles"]
+    res = JSON.parse(response.body)['data']['articles']
     expect(res.count).to eq(3)
     expect(res[0]['title']).to eq(mine_5.title)
     expect(res[1]['title']).to eq(mine_3.title)
@@ -385,7 +385,7 @@ describe 'GET /api/articles', type: :request do
     # フィルターあり(other)
     get("/api/articles?author=#{other1.username}", headers:)
     expect(response).to have_http_status(:ok)
-    res = JSON.parse(response.body)["articles"]
+    res = JSON.parse(response.body)['data']['articles']
     expect(res.count).to eq(3)
     expect(res[0]['title']).to eq(other_6.title)
     expect(res[1]['title']).to eq(other_4.title)
@@ -416,7 +416,7 @@ describe 'GET /api/articles', type: :request do
     # フィルターなし
     get("/api/articles", headers:)
     expect(response).to have_http_status(:ok)
-    res = JSON.parse(response.body)["articles"]
+    res = JSON.parse(response.body)['data']['articles']
     expect(res.count).to eq(4)
     expect(res[0]['title']).to eq(other_4.title)
     expect(res[1]['title']).to eq(mine_3.title)
@@ -426,7 +426,7 @@ describe 'GET /api/articles', type: :request do
     # フィルターあり
     get("/api/articles?tag=#{tags[0].name}", headers:)
     expect(response).to have_http_status(:ok)
-    res = JSON.parse(response.body)["articles"]
+    res = JSON.parse(response.body)['data']['articles']
     expect(res.count).to eq(2)
     expect(res[0]['title']).to eq(other_2.title)
     expect(res[1]['title']).to eq(mine_1.title)
@@ -434,7 +434,7 @@ describe 'GET /api/articles', type: :request do
     # フィルターあり
     get("/api/articles?tag=#{tags[2].name}", headers:)
     expect(response).to have_http_status(:ok)
-    res = JSON.parse(response.body)["articles"]
+    res = JSON.parse(response.body)['data']['articles']
     expect(res.count).to eq(2)
     expect(res[0]['title']).to eq(other_4.title)
     expect(res[1]['title']).to eq(mine_3.title)
@@ -463,7 +463,7 @@ describe 'GET /api/articles', type: :request do
     # フィルターなし
     get("/api/articles", headers:)
     expect(response).to have_http_status(:ok)
-    res = JSON.parse(response.body)["articles"]
+    res = JSON.parse(response.body)['data']['articles']
     expect(res.count).to eq(4)
     expect(res[0]['title']).to eq(other_4.title)
     expect(res[1]['title']).to eq(mine_3.title)
@@ -473,7 +473,7 @@ describe 'GET /api/articles', type: :request do
     # フィルターあり
     get("/api/articles?favorited=#{user.username}", headers:)
     expect(response).to have_http_status(:ok)
-    res = JSON.parse(response.body)["articles"]
+    res = JSON.parse(response.body)['data']['articles']
     expect(res.count).to eq(2)
     expect(res[0]['title']).to eq(other_2.title)
     expect(res[1]['title']).to eq(mine_1.title)
@@ -481,7 +481,7 @@ describe 'GET /api/articles', type: :request do
     # フィルターあり
     get("/api/articles?favorited=#{other2.username}", headers:)
     expect(response).to have_http_status(:ok)
-    res = JSON.parse(response.body)["articles"]
+    res = JSON.parse(response.body)['data']['articles']
     expect(res.count).to eq(2)
     expect(res[0]['title']).to eq(other_4.title)
     expect(res[1]['title']).to eq(mine_3.title)

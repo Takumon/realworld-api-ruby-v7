@@ -9,7 +9,7 @@ describe 'POST /aip/users/login', type: :request do
     post('/api/users/login', params:)
 
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
     expect(res['bio']).to be nil
     expect(res['image']).to be nil

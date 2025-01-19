@@ -1,18 +1,18 @@
 module Api
   module Users
     class LoginController < Api::Controller
-      skip_before_action :authenticate_request
+      set :is_required_auth, false
 
       def phase_invoke
         req = LoginRequest.new(params_login)
 
         if req.invalid?
-          return [ req.errors, :bad_request ]
+          raise ValidationError.new(req.errors, :bad_request)
         end
 
         user = ::User.authenticate_by(email: req.email, password: req.password)
         if user.nil?
-          return [ { error: "メールアドレスとパスワードに組み合わせが間違っています" }, :unauthorized ]
+          raise ValidationError.new("メールアドレスとパスワードに組み合わせが間違っています", :unauthorized)
         end
 
         [ res_user_with_token(user), :ok ]
@@ -21,6 +21,8 @@ module Api
       private
       def params_login
         params.require(:user).permit(:email, :password)
+      rescue ActionController::ParameterMissing => e
+        raise ValidationError.new("リクエストが不正です", :bad_request)
       end
 
       def res_user_with_token(user)

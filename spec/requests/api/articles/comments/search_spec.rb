@@ -22,7 +22,7 @@ describe 'GET /api/articles/:slug/comments', type: :request do
     post('/api/users/login', params:, headers: none_auth_headers, as: :json)
 
     expect(response).to have_http_status(:success)
-    res =JSON.parse(response.body)['user']
+    res =JSON.parse(response.body)['data']['user']
     expect(res['token']).not_to be nil
 
     res['token']
@@ -51,7 +51,7 @@ describe 'GET /api/articles/:slug/comments', type: :request do
     it 'コメント一覧が取得できる' do
       get("/api/articles/#{source_item.slug}/comments", headers:)
       expect(response).to have_http_status(:ok)
-      res = JSON.parse(response.body)
+      res = JSON.parse(response.body)['data']
       expect(res['comments'].count).to eq(4)
     end
   end

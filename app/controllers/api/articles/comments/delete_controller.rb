@@ -10,14 +10,14 @@ module Api
           end
 
           if comment.user_id != @current_user.id
-            return [ { errors: "失敗" },  :forbidden ]
+            raise ValidationError.new("失敗", :forbidden)
           end
 
-          if comment.destroy
-            [ {},  :ok ]
-          else
-            [ { errors: "失敗" },  :unprocessable_entity ]
+          unless comment.destroy
+            raise ValidationError.new("失敗", :unprocessable_entity)
           end
+
+          [ {},  :ok ]
         end
 
         private
