@@ -47,4 +47,30 @@ class User < ApplicationRecord
   validates :lock_version,
     presence: true,
     on: :update
+
+  def res(options = {}, possible_follower = nil)
+    result = as_json(options.merge(only: [
+      :username,
+      :email,
+      :bio,
+      :image,
+      :lock_version
+    ]))
+
+    additional = {
+      following: followed?(possible_follower)
+    }
+
+    if options[:root]
+      result["user"].merge!(additional)
+    else
+      result.merge!(additional)
+    end
+
+    result
+  end
+
+  def followed?(possible_follower)
+    possible_follower.nil? ? false : possible_follower.following.exists?(self.id)
+  end
 end

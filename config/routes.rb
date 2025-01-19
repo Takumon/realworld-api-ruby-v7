@@ -1,29 +1,44 @@
 Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
   namespace :api do
-    post "users/login", to: "users#login"
-    post "users", to: "users#create"
+    namespace :users do
+      post "/login", to: "login#invoke"
+      post "", to: "create#invoke"
+    end
 
-    get "user", to: "users#show"
-    put "user", to: "users#update"
+    namespace :user do
+      get "", to: "get#invoke"
+      put "", to: "update#invoke"
+    end
 
-    get "profiles/:username", to: "profiles#show"
-    post "profiles/:username/follow", to: "profiles#follow"
-    delete "profiles/:username/follow", to: "profiles#unfollow"
+    namespace :profiles do
+      get ":username", to: "get#invoke"
+      post ":username/follow", to: "follow#invoke"
+      delete ":username/follow", to: "unfollow#invoke"
+    end
 
-    get "articles", to: "articles#index"
-    post "articles", to: "articles#create"
-    get "articles/feed", to: "articles#feed"
-    get "articles/:slug", to: "articles#show"
-    put "articles/:slug", to: "articles#update"
-    delete "articles/:slug", to: "articles#destroy"
-    post "articles/:slug/favorite", to: "articles#favorite"
-    delete "articles/:slug/favorite", to: "articles#unfavorite"
+    namespace :articles do
+      get "", to: "search#invoke"
+      post "", to: "create#invoke"
+      get "/feed", to: "feed#invoke"
+      get "/:slug", to: "get#invoke"
+      put "/:slug", to: "update#invoke"
+      delete "/:slug", to: "delete#invoke"
 
-    get "articles/:slug/comments", to: "articles#comments"
-    post "articles/:slug/comments", to: "articles#create_comment"
-    delete "articles/:slug/comments/:id", to: "articles#delete_comment"
+      namespace :favorite, path: "/:slug/favorite" do
+        post "", to: "create#invoke"
+        delete "", to: "delete#invoke"
+      end
 
-    get "tags", to: "tags#index"
+      namespace :comments, path: "/:slug/comments" do
+        get "", to: "search#invoke"
+        post "", to: "create#invoke"
+        delete "/:id", to: "delete#invoke"
+      end
+    end
+
+    namespace :tags do
+      get "", to: "search#invoke"
+    end
   end
 end

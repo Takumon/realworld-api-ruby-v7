@@ -61,4 +61,29 @@ class Article < ApplicationRecord
       self.tags.reload # tags を更新
     end
   end
+
+  def res(options = {}, target_user = nil)
+    result = as_json(options.merge(only: [
+      :id,
+      :slug,
+      :title,
+      :description,
+      :body
+    ]))
+
+    additional = {
+      tagList: self.tags.map(&:name),
+      favorited: target_user.nil? ? false : target_user.favorites.map(&:article_id).include?(self.id),
+      favoritesCount: self.favorites.count,
+      author: self.user.res({}, target_user)
+    }
+
+    if options[:root]
+      result["article"].merge!(additional)
+    else
+      result.merge!(additional)
+    end
+
+    result
+  end
 end

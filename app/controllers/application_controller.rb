@@ -1,4 +1,14 @@
 class ApplicationController < ActionController::API
+  before_action :authenticate_request
+
+  def invoke
+    phase_invoke
+  end
+
+  def phase_invoke
+    rails NotImplementedError, "You must implement #{self.class}##{__method__}"
+  end
+
   private
 
     SECRET_KEY = Rails.application.credentials.secret_key_base
@@ -25,9 +35,9 @@ class ApplicationController < ActionController::API
       begin
         JWT.decode(token, SECRET_KEY, true, { algorithm: JWT_ALGORITHM }).first.symbolize_keys
       rescue JWT::ExpiredSignature
-        false # トークンの有効期限切れ
+        nil
       rescue JWT::DecodeError
-        false # トークンが不正
+        nil
       end
     end
 
